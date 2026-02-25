@@ -283,23 +283,53 @@ body {
 
 .letters-grid {
   margin-top: 18px;
-  columns: 4 210px;
-  column-gap: 14px;
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  grid-gap: 14px;
+  gap: 14px;
+  grid-auto-flow: dense;
 }
 
 .letter {
   position: relative;
-  display: inline-block;
-  width: 100%;
-  page-break-inside: avoid;
-  break-inside: avoid;
-  margin: 0 0 14px;
+  grid-column: span 2;
+  min-height: 170px;
   border-radius: 14px;
   padding: 14px 14px 40px;
   border: 1px solid #ead6dd;
   box-shadow: 0 12px 18px rgba(72, 18, 36, 0.08);
   animation: cardIn 0.5s ease both;
   transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.letter-size-sm {
+  grid-column: span 2;
+  min-height: 160px;
+}
+
+.letter-size-sm-wide {
+  grid-column: span 3;
+  min-height: 170px;
+}
+
+.letter-size-md {
+  grid-column: span 2;
+  min-height: 220px;
+}
+
+.letter-size-md-wide {
+  grid-column: span 3;
+  min-height: 220px;
+}
+
+.letter-size-lg {
+  grid-column: span 3;
+  min-height: 280px;
+}
+
+.letter-size-xl {
+  grid-column: span 4;
+  min-height: 320px;
 }
 
 .letter:hover {
@@ -314,8 +344,39 @@ body {
   gap: 8px;
 }
 
+.letter-author {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.wish-avatar-img,
+.wish-avatar-fallback {
+  width: 32px;
+  height: 32px;
+  border-radius: 999px;
+  flex: 0 0 32px;
+}
+
+.wish-avatar-img {
+  object-fit: cover;
+  border: 1px solid #e6cad3;
+  background: #fff;
+}
+
+.wish-avatar-fallback {
+  display: grid;
+  place-items: center;
+  border: 1px solid #d9b8c5;
+  background: linear-gradient(130deg, #d94e77, #a93f71);
+  color: #fff;
+  font-size: 0.74rem;
+  font-weight: 700;
+}
+
 .letter-title {
-  margin: 0 0 8px;
+  margin: 0;
   font-weight: 700;
   color: #6e3e4d;
 }
@@ -329,6 +390,33 @@ body {
 .letter-content {
   margin: 0;
   line-height: 1.5;
+}
+
+.like-btn {
+  position: absolute;
+  left: 12px;
+  bottom: 10px;
+  border: 1px solid #e6c8d3;
+  background: #fff;
+  border-radius: 999px;
+  padding: 6px 10px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  color: #8b3653;
+  font-weight: 700;
+}
+
+.like-btn.liked {
+  border-color: #d14e76;
+  color: #c22b61;
+  background: #fff0f5;
+}
+
+.like-btn:disabled {
+  opacity: 0.75;
+  cursor: not-allowed;
 }
 
 .letter-stamp {
@@ -607,7 +695,18 @@ body {
   }
 
   .letters-grid {
-    columns: 1;
+    grid-template-columns: 1fr;
+  }
+
+  .letter,
+  .letter-size-sm,
+  .letter-size-sm-wide,
+  .letter-size-md,
+  .letter-size-md-wide,
+  .letter-size-lg,
+  .letter-size-xl {
+    grid-column: auto;
+    min-height: auto;
   }
 
   .inline-btns {

@@ -80,6 +80,7 @@ Vi du event 8/3 duoc seed san:
 - `GET /api/public/active-event`
 - `GET /api/public/events/:slug`
 - `POST /api/public/wishes`
+- `POST /api/public/wishes/:wishId/like` (toggle tim/bo tim theo tai khoan dang nhap)
 - `GET /api/admin/events` (can `x-admin-key`)
 - `POST /api/admin/events` (can `x-admin-key`, bat buoc `publicUrl`)
 - `PATCH /api/admin/events/:id/active` (can `x-admin-key`)
