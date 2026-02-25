@@ -1,0 +1,59 @@
+:root {
+  --bg: #fff9f5;
+  --card: #ffffff;
+  --text: #2d1f1f;
+  --primary: #d94d63;
+  --border: #f0d8d8;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
+  background: radial-gradient(circle at top right, #ffe4ea 0%, var(--bg) 40%);
+  color: var(--text);
+}
+
+.container {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 24px;
+}
+
+.card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 16px;
+  margin-bottom: 14px;
+}
+
+input,
+textarea,
+button {
+  width: 100%;
+  padding: 10px 12px;
+  margin-top: 8px;
+  border-radius: 10px;
+  border: 1px solid #e6c9c9;
+  font: inherit;
+}
+
+button {
+  cursor: pointer;
+  background: var(--primary);
+  color: white;
+  border: 0;
+}
+
+.inline {
+  display: flex;
+  gap: 10px;
+}
+
+.inline > * {
+  flex: 1;
+}
