@@ -2,9 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import {
-  createUserWithEmailAndPassword,
   onAuthStateChanged,
-  signInWithEmailAndPassword,
   signInWithPopup,
   signOut
 } from 'firebase/auth';
@@ -27,9 +25,6 @@ export default function Event83Page() {
 
   const [user, setUser] = useState(null);
   const [authLoading, setAuthLoading] = useState(true);
-  const [authMode, setAuthMode] = useState('login');
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
   const [authMessage, setAuthMessage] = useState('');
 
   const [drawing, setDrawing] = useState(false);
@@ -201,28 +196,6 @@ export default function Event83Page() {
     }
   }
 
-  async function handleEmailAuth(e) {
-    e.preventDefault();
-    setAuthMessage('');
-
-    if (!hasFirebaseConfig || !auth) {
-      setAuthMessage('Chưa cấu hình Firebase Auth.');
-      return;
-    }
-
-    try {
-      if (authMode === 'register') {
-        await createUserWithEmailAndPassword(auth, email, password);
-        setAuthMessage('Tạo tài khoản thành công.');
-      } else {
-        await signInWithEmailAndPassword(auth, email, password);
-        setAuthMessage('Đăng nhập thành công.');
-      }
-    } catch (e) {
-      setAuthMessage(e.message || 'Xác thực thất bại');
-    }
-  }
-
   async function handleGoogleLogin() {
     setAuthMessage('');
     if (!hasFirebaseConfig || !auth || !googleProvider) {
@@ -281,14 +254,7 @@ export default function Event83Page() {
         user={user}
         authLoading={authLoading}
         hasFirebaseConfig={hasFirebaseConfig}
-        authMode={authMode}
-        email={email}
-        password={password}
         authMessage={authMessage}
-        onSetEmail={setEmail}
-        onSetPassword={setPassword}
-        onSwitchAuthMode={() => setAuthMode(authMode === 'register' ? 'login' : 'register')}
-        onEmailAuth={handleEmailAuth}
         onGoogleLogin={handleGoogleLogin}
         onLogout={handleLogout}
       />
@@ -308,9 +274,7 @@ export default function Event83Page() {
           onLikeWish={likeWish}
         />
       )}
-      {tab === 'game' && (
-        <GameTab drawing={drawing} drawResult={drawResult} onLuckyDraw={runLuckyDraw} />
-      )}
+      {tab === 'game' && <GameTab user={user} drawing={drawing} drawResult={drawResult} onLuckyDraw={runLuckyDraw} />}
     </main>
   );
 }

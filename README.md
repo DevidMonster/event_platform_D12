@@ -52,7 +52,8 @@ App su kien da co:
 
 - Giao dien 3 tab: `Trang chu`, `Gui loi chuc`, `MiniGame`
 - Card loi chuc dang \"la thu\" voi style ngau nhien
-- Auth Firebase: Email/Password + Google sign-in
+- Auth Firebase: Google sign-in
+- Bat buoc dang nhap de: gui loi chuc, tha tim va choi mini game
 
 Can cau hinh them trong `event-8-3-nextjs/.env.local`:
 
@@ -63,7 +64,6 @@ Can cau hinh them trong `event-8-3-nextjs/.env.local`:
 
 Can bat providers trong Firebase Console:
 
-- Authentication -> Sign-in method -> `Email/Password` = Enable
 - Authentication -> Sign-in method -> `Google` = Enable
 
 ## 4) Du lieu event

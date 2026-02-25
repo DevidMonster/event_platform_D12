@@ -39,9 +39,15 @@ router.post('/wishes', async (req, res) => {
   const normalizedAuthorName = String(authorName || '').trim();
   const normalizedContent = String(content || '').trim();
   const normalizedAvatarUrl = String(avatarUrl || '').trim();
+  const normalizedUserUid = String(userUid || '').trim();
+  const normalizedUserEmail = String(userEmail || '').trim().toLowerCase();
 
   if (!eventSlug || !normalizedAuthorName || !normalizedContent) {
     return res.status(400).json({ message: 'eventSlug, authorName, content are required' });
+  }
+
+  if (!normalizedUserUid && !normalizedUserEmail) {
+    return res.status(401).json({ message: 'Login is required to submit a wish' });
   }
 
   const event = await Event.findOne({ slug: eventSlug, status: 'published' });
@@ -55,8 +61,8 @@ router.post('/wishes', async (req, res) => {
 
   const wish = await Wish.create({
     eventId: event._id,
-    userUid: userUid || null,
-    userEmail: userEmail || null,
+    userUid: normalizedUserUid || null,
+    userEmail: normalizedUserEmail || null,
     avatarUrl: normalizedAvatarUrl || null,
     authorName: normalizedAuthorName,
     content: normalizedContent,
