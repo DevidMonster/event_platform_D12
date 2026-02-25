@@ -31,20 +31,25 @@ export default function WishesTab({
 
       {error && <p className="message error">{error}</p>}
 
-      <div className="letters-grid">
-        {wishes.length === 0 && <p>Chưa có lời chúc nào.</p>}
-        {wishes.map((wish, index) => (
-          <WishCard
-            key={wish._id}
-            wish={wish}
-            index={index}
-            liked={isWishLikedByCurrentUser(wish)}
-            likeBusy={likeLoadingIds.includes(wish._id)}
-            user={user}
-            onLike={onLikeWish}
-          />
-        ))}
-      </div>
+      {wishes.length === 0 ? 
+        <div className='letters-fallbacks'>
+          <p>Chưa có lời chúc nào.</p>
+        </div>
+      :
+        <div className="letters-grid">
+          {wishes.map((wish, index) => (
+            <WishCard
+              key={wish._id}
+              wish={wish}
+              index={index}
+              liked={isWishLikedByCurrentUser(wish)}
+              likeBusy={likeLoadingIds.includes(wish._id)}
+              user={user}
+              onLike={onLikeWish}
+            />
+          ))}
+        </div>
+      }
     </section>
   );
 }

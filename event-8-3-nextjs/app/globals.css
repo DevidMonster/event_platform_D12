@@ -326,6 +326,10 @@ body {
   margin-bottom: 10px;
 }
 
+.letters-fallbacks {
+  margin-top: 18px;
+}
+
 .letters-grid {
   margin-top: 18px;
   display: grid;
@@ -432,7 +436,7 @@ body {
 }
 
 .letter-content {
-  margin: 0;
+  margin: 10px 0;
   line-height: 1.5;
 }
 
