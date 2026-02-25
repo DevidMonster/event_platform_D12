@@ -1,12 +1,13 @@
 import Image from 'next/image';
+import Link from 'next/link';
 
 const tabs = [
-  { key: 'home', label: '🏠 Trang chủ' },
-  { key: 'wishes', label: '💌 Gửi lời chúc' },
-  { key: 'game', label: '🎁 Mini game' }
+  { key: 'home', label: '🏠 Trang chủ', href: '/' },
+  { key: 'wishes', label: '💌 Gửi lời chúc', href: '/wishes' },
+  { key: 'game', label: '🎁 Mini game', href: '/game' }
 ];
 
-export default function HeroSection({ event, tab, onTabChange }) {
+export default function HeroSection({ event, tab }) {
   return (
     <header className="hero">
       <div className="hero-top">
@@ -29,13 +30,13 @@ export default function HeroSection({ event, tab, onTabChange }) {
 
       <nav className="tabs">
         {tabs.map((item) => (
-          <button
+          <Link
             key={item.key}
             className={tab === item.key ? 'tab active' : 'tab'}
-            onClick={() => onTabChange(item.key)}
+            href={item.href}
           >
             {item.label}
-          </button>
+          </Link>
         ))}
       </nav>
     </header>
