@@ -3,7 +3,7 @@
 import { createContext, useContext, useEffect, useMemo, useState } from 'react';
 import { onAuthStateChanged, signInWithPopup, signOut } from 'firebase/auth';
 import { auth, googleProvider, hasFirebaseConfig } from '../lib/firebase';
-import { eventSlug, luckyPool } from '../lib/event-content';
+import { eventSlug } from '../lib/event-content';
 
 const EventAppContext = createContext(null);
 
@@ -18,8 +18,6 @@ export function EventAppProvider({ children }) {
   const [authLoading, setAuthLoading] = useState(true);
   const [authMessage, setAuthMessage] = useState('');
 
-  const [drawing, setDrawing] = useState(false);
-  const [drawResult, setDrawResult] = useState('');
   const [likeLoadingIds, setLikeLoadingIds] = useState([]);
 
   const wishes = useMemo(() => data?.wishes || [], [data]);
@@ -210,22 +208,6 @@ export function EventAppProvider({ children }) {
     setAuthMessage('');
   }
 
-  function runLuckyDraw() {
-    if (!user) {
-      setError('Bạn cần đăng nhập để chơi mini game.');
-      return;
-    }
-
-    setDrawing(true);
-    setDrawResult('Đang bốc thăm...');
-
-    window.setTimeout(() => {
-      const random = luckyPool[Math.floor(Math.random() * luckyPool.length)];
-      setDrawResult(random);
-      setDrawing(false);
-    }, 1200);
-  }
-
   const value = {
     data,
     loading,
@@ -238,8 +220,6 @@ export function EventAppProvider({ children }) {
     myWishCount,
     content,
     submitting,
-    drawing,
-    drawResult,
     likeLoadingIds,
     hasFirebaseConfig,
     setContent,
@@ -247,8 +227,7 @@ export function EventAppProvider({ children }) {
     likeWish,
     isWishLikedByCurrentUser,
     handleGoogleLogin,
-    handleLogout,
-    runLuckyDraw
+    handleLogout
   };
 
   return <EventAppContext.Provider value={value}>{children}</EventAppContext.Provider>;

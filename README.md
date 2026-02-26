@@ -85,6 +85,12 @@ Vi du event 8/3 duoc seed san:
 - `POST /api/public/wishes`
 - `GET /api/public/chat/:eventSlug/messages`
 - `POST /api/public/wishes/:wishId/like` (toggle tim/bo tim theo tai khoan dang nhap)
+- `GET /api/public/games/:eventSlug/bootstrap`
+- `POST /api/public/games/:eventSlug/draw`
+- `POST /api/public/games/:eventSlug/wheel`
+- `POST /api/public/games/:eventSlug/flip`
+- `GET /api/public/games/:eventSlug/quiz/question`
+- `POST /api/public/games/:eventSlug/quiz/answer`
 - `GET /api/admin/events` (can `x-admin-key`)
 - `POST /api/admin/events` (can `x-admin-key`, bat buoc `publicUrl`)
 - `PATCH /api/admin/events/:id/active` (can `x-admin-key`)

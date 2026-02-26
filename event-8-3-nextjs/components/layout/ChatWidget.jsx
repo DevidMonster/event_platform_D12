@@ -34,6 +34,14 @@ export default function ChatWidget({ eventSlug, user }) {
 
   const authorName = useMemo(() => user?.displayName || user?.email || 'Khách', [user]);
 
+  function scrollToBottom(behavior = 'auto') {
+    if (!listRef.current) return;
+    listRef.current.scrollTo({
+      top: listRef.current.scrollHeight,
+      behavior
+    });
+  }
+
   useEffect(() => {
     if (!open || !eventSlug || !canChat || !socketUrl) return undefined;
 
@@ -48,7 +56,10 @@ export default function ChatWidget({ eventSlug, user }) {
         });
         const json = await res.json();
         if (!res.ok) throw new Error(json.message || 'Không tải được lịch sử chat');
-        if (mounted) setMessages(Array.isArray(json.messages) ? json.messages : []);
+        if (mounted) {
+          setMessages(Array.isArray(json.messages) ? json.messages : []);
+          window.requestAnimationFrame(() => scrollToBottom('auto'));
+        }
       } catch (e) {
         if (mounted) setChatError(e.message || 'Không tải được lịch sử chat');
       } finally {
@@ -76,7 +87,9 @@ export default function ChatWidget({ eventSlug, user }) {
       setMessages((prev) => {
         const exists = prev.some((item) => String(item._id) === String(message._id));
         if (exists) return prev;
-        return [...prev, message];
+        const next = [...prev, message];
+        window.requestAnimationFrame(() => scrollToBottom('smooth'));
+        return next;
       });
     });
 
@@ -93,7 +106,7 @@ export default function ChatWidget({ eventSlug, user }) {
 
   useEffect(() => {
     if (!open || !listRef.current) return;
-    listRef.current.scrollTop = listRef.current.scrollHeight;
+    scrollToBottom('auto');
   }, [messages, open]);
 
   function sendMessage(e) {
@@ -111,6 +124,7 @@ export default function ChatWidget({ eventSlug, user }) {
     });
 
     setInput('');
+    window.requestAnimationFrame(() => scrollToBottom('smooth'));
   }
 
   return (
