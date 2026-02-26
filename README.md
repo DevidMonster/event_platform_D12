@@ -20,6 +20,7 @@ Cap nhat `.env`:
 - `MONGODB_URI`: chuoi ket noi Atlas
 - `ADMIN_KEY`: key admin
 - `CORS_ORIGIN`: `http://localhost:3000,http://localhost:3001`
+- `DEFAULT_EVENT_PUBLIC_URL`: URL app su kien mac dinh (vi du production URL cua event 8/3)
 
 Backend: `http://localhost:5000`
 
@@ -54,6 +55,7 @@ App su kien da co:
 - Card loi chuc dang \"la thu\" voi style ngau nhien
 - Auth Firebase: Google sign-in
 - Bat buoc dang nhap de: gui loi chuc, tha tim va choi mini game
+- Chat realtime (Socket.IO) voi nut chat goc duoi, bam de mo/dong panel chat
 
 Can cau hinh them trong `event-8-3-nextjs/.env.local`:
 
@@ -61,6 +63,7 @@ Can cau hinh them trong `event-8-3-nextjs/.env.local`:
 - `NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN`
 - `NEXT_PUBLIC_FIREBASE_PROJECT_ID`
 - `NEXT_PUBLIC_FIREBASE_APP_ID`
+- `NEXT_PUBLIC_SOCKET_URL` (vi du `http://localhost:5000`)
 
 Can bat providers trong Firebase Console:
 
@@ -80,6 +83,7 @@ Vi du event 8/3 duoc seed san:
 - `GET /api/public/active-event`
 - `GET /api/public/events/:slug`
 - `POST /api/public/wishes`
+- `GET /api/public/chat/:eventSlug/messages`
 - `POST /api/public/wishes/:wishId/like` (toggle tim/bo tim theo tai khoan dang nhap)
 - `GET /api/admin/events` (can `x-admin-key`)
 - `POST /api/admin/events` (can `x-admin-key`, bat buoc `publicUrl`)

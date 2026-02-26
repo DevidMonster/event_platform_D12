@@ -2,11 +2,12 @@ const Event = require('./models/Event');
 
 async function seedDefaultEvent() {
   const slug = '8-3-2026';
+  const defaultPublicUrl = process.env.DEFAULT_EVENT_PUBLIC_URL || 'http://localhost:3001';
   const existing = await Event.findOne({ slug });
 
   if (existing) {
     if (!existing.publicUrl) {
-      existing.publicUrl = 'http://localhost:3001';
+      existing.publicUrl = defaultPublicUrl;
       await existing.save();
       console.log('Updated default event publicUrl: 8-3-2026');
     }
@@ -16,7 +17,7 @@ async function seedDefaultEvent() {
   await Event.create({
     name: 'Sự kiện 8/3/2026',
     slug,
-    publicUrl: 'http://localhost:3001',
+    publicUrl: defaultPublicUrl,
     description: 'Chúc mừng ngày Quốc tế Phụ nữ 8/3',
     isActive: true,
     status: 'published',

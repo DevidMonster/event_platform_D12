@@ -1,6 +1,7 @@
 import HeroSection from './HeroSection';
 import QuickStats from './QuickStats';
 import AuthSection from './AuthSection';
+import ChatWidget from './ChatWidget';
 
 export default function EventFrame({
   event,
@@ -44,6 +45,7 @@ export default function EventFrame({
       />
 
       {children}
+      <ChatWidget eventSlug={event.slug} user={user} />
     </main>
   );
 }

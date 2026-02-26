@@ -2,8 +2,13 @@ const express = require('express');
 const mongoose = require('mongoose');
 const Event = require('../models/Event');
 const Wish = require('../models/Wish');
+const ChatMessage = require('../models/ChatMessage');
 
 const router = express.Router();
+
+async function findPublicEventBySlug(slug) {
+  return Event.findOne({ slug, status: 'published', isActive: true }).lean();
+}
 
 router.get('/active-event', async (req, res) => {
   const event = await Event.findOne({ isActive: true, status: 'published' }).lean();
@@ -14,16 +19,8 @@ router.get('/active-event', async (req, res) => {
 });
 
 router.get('/events/:slug', async (req, res) => {
-  const event = await Event.findOne({
-    slug: req.params.slug,
-    status: 'published'
-  }).lean();
-
+  const event = await findPublicEventBySlug(req.params.slug);
   if (!event) {
-    return res.status(404).json({ message: 'Event not found' });
-  }
-
-  if (!event.isActive) {
     return res.status(403).json({ message: 'This event is not public right now' });
   }
 
@@ -50,12 +47,8 @@ router.post('/wishes', async (req, res) => {
     return res.status(401).json({ message: 'Login is required to submit a wish' });
   }
 
-  const event = await Event.findOne({ slug: eventSlug, status: 'published' });
+  const event = await findPublicEventBySlug(eventSlug);
   if (!event) {
-    return res.status(404).json({ message: 'Event not found' });
-  }
-
-  if (!event.isActive) {
     return res.status(403).json({ message: 'This event is not public right now' });
   }
 
@@ -70,6 +63,27 @@ router.post('/wishes', async (req, res) => {
   });
 
   return res.status(201).json(wish);
+});
+
+router.get('/chat/:eventSlug/messages', async (req, res) => {
+  const eventSlug = String(req.params.eventSlug || '').trim();
+  const limit = Math.min(Math.max(parseInt(req.query.limit, 10) || 40, 1), 100);
+
+  if (!eventSlug) {
+    return res.status(400).json({ message: 'eventSlug is required' });
+  }
+
+  const event = await findPublicEventBySlug(eventSlug);
+  if (!event) {
+    return res.status(403).json({ message: 'This event is not public right now' });
+  }
+
+  const messages = await ChatMessage.find({ eventSlug })
+    .sort({ createdAt: -1 })
+    .limit(limit)
+    .lean();
+
+  return res.json({ messages: messages.reverse() });
 });
 
 router.post('/wishes/:wishId/like', async (req, res) => {

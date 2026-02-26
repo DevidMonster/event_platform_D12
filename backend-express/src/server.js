@@ -1,10 +1,13 @@
 require('dotenv').config();
 const express = require('express');
+const http = require('http');
 const cors = require('cors');
+const { Server } = require('socket.io');
 const { connectDB } = require('./config/db');
 const publicRoutes = require('./routes/public');
 const adminRoutes = require('./routes/admin');
 const { seedDefaultEvent } = require('./seed');
+const { setupChatSocket } = require('./socket/chat');
 
 const app = express();
 
@@ -33,11 +36,20 @@ app.use((err, req, res, next) => {
 });
 
 const PORT = process.env.PORT || 5000;
+const server = http.createServer(app);
+const io = new Server(server, {
+  cors: {
+    origin: allowedOrigins,
+    methods: ['GET', 'POST']
+  }
+});
+
+setupChatSocket(io);
 
 async function start() {
   await connectDB();
   await seedDefaultEvent();
-  app.listen(PORT, () => {
+  server.listen(PORT, () => {
     console.log(`Server listening on port ${PORT}`);
   });
 }
