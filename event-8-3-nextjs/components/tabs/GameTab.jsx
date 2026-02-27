@@ -235,6 +235,12 @@ export default function GameTab({ user }) {
         >
           Lật thẻ
         </button>
+        <button
+          className={activeGame === 'sayword' ? 'game-tab-btn active' : 'game-tab-btn'}
+          onClick={() => setActiveGame('sayword')}
+        >
+          Say The Word
+        </button>
       </div>
 
       <div className='game-container'>
@@ -345,6 +351,13 @@ export default function GameTab({ user }) {
                 ))}
               </div>
               {flipResult && <p className="draw-result">Kết quả: {flipResult}</p>}
+            </article>
+          )}
+
+          {activeGame === 'sayword' && (
+            <article className="mini-game-card game-stage fade-in">
+              <h3>Say The Word</h3>
+              <div className="sayword-container" />
             </article>
           )}
         </div>
