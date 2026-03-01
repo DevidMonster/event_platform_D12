@@ -7,11 +7,11 @@ import { EventAppProvider, useEventApp } from '../../context/EventAppContext';
 
 function resolveActiveTab(pathname) {
   const map = {
-    '/': 'home',
-    '/wishes': 'wishes',
+    '/': 'wishes',
+    '/wishes': 'home',
     '/game': 'game'
   };
-  return map[pathname] || 'home';
+  return map[pathname] || 'wishes';
 }
 
 function EventAppLayoutInner({ children }) {

@@ -1,5 +1,5 @@
-import HomeRouteScreen from '../components/routes/home/HomeRouteScreen';
+import WishesRouteScreen from '../components/routes/wishes/WishesRouteScreen';
 
 export default function HomePage() {
-  return <HomeRouteScreen />;
+  return <WishesRouteScreen />;
 }

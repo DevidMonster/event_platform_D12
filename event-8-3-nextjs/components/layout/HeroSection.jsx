@@ -3,7 +3,7 @@ import Link from 'next/link';
 
 const tabs = [
   { key: 'wishes', label: '💌 Gửi lời chúc', href: '/' },
-  { key: 'home', label: '🏠 Sự kiện', href: '/wishes' },
+  { key: 'home', label: '🏠 Trang chủ', href: '/wishes' },
   { key: 'game', label: '🎁 Mini game', href: '/game' }
 ];
 
