@@ -2,8 +2,8 @@ import Image from 'next/image';
 import Link from 'next/link';
 
 const tabs = [
-  { key: 'home', label: '🏠 Trang chủ', href: '/' },
-  { key: 'wishes', label: '💌 Gửi lời chúc', href: '/wishes' },
+  { key: 'wishes', label: '💌 Gửi lời chúc', href: '/' },
+  { key: 'home', label: '🏠 Sự kiện', href: '/wishes' },
   { key: 'game', label: '🎁 Mini game', href: '/game' }
 ];
 
