@@ -1,5 +1,5 @@
-import GameRouteScreen from '../../components/routes/game/GameRouteScreen';
+import { redirect } from 'next/navigation';
 
 export default function GamePage() {
-  return <GameRouteScreen />;
+  redirect('/');
 }

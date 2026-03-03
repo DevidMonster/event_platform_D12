@@ -8,8 +8,7 @@ import { EventAppProvider, useEventApp } from '../../context/EventAppContext';
 function resolveActiveTab(pathname) {
   const map = {
     '/': 'wishes',
-    '/wishes': 'home',
-    '/game': 'game'
+    '/wishes': 'home'
   };
   return map[pathname] || 'wishes';
 }
@@ -33,8 +32,8 @@ function EventAppLayoutInner({ children }) {
   } = useEventApp();
 
   if (loading) return <EventSkeleton />;
-  if (error && !data) return <main className="event-shell">Lỗi: {error}</main>;
-  if (!data) return <main className="event-shell">Không có dữ liệu</main>;
+  if (error && !data) return <main className="event-shell">Loi: {error}</main>;
+  if (!data) return <main className="event-shell">Khong co du lieu</main>;
 
   return (
     <EventFrame

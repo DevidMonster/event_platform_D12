@@ -40,7 +40,6 @@ async function seedDefaultEvent() {
       await existing.save();
       console.log('Updated default event publicUrl: 8-3-2026');
     }
-    await seedMiniGames(slug);
     return;
   }
 
@@ -56,8 +55,6 @@ async function seedDefaultEvent() {
   });
 
   console.log('Seeded default event: 8-3-2026');
-  await seedMiniGames(slug);
-  console.log('Seeded wheel rewards for event: 8-3-2026');
 }
 
 module.exports = { seedDefaultEvent, seedMiniGames };

@@ -2,9 +2,8 @@ import Image from 'next/image';
 import Link from 'next/link';
 
 const tabs = [
-  { key: 'wishes', label: '💌 Gửi lời chúc', href: '/' },
-  { key: 'home', label: '🏠 Trang chủ', href: '/wishes' },
-  { key: 'game', label: '🎡 Quay thưởng', href: '/game' }
+  { key: 'wishes', label: 'Gui loi nhan', href: '/' },
+  { key: 'home', label: 'Trang chu', href: '/wishes' }
 ];
 
 export default function HeroSection({ event, tab }) {
@@ -22,19 +21,15 @@ export default function HeroSection({ event, tab }) {
           />
           <span className="brand-name">D12 Event</span>
         </div>
-        <p className="hero-kicker">Sự kiện 8/3</p>
+        <p className="hero-kicker">Su kien 8/3</p>
       </div>
 
       <h1>{event.name}</h1>
-      <p>{event.description || 'Không gian lời chúc và kết nối toàn đơn vị.'}</p>
+      <p>{event.description || 'Khong gian loi nhan va ket noi toan don vi.'}</p>
 
       <nav className="tabs">
         {tabs.map((item) => (
-          <Link
-            key={item.key}
-            className={tab === item.key ? 'tab active' : 'tab'}
-            href={item.href}
-          >
+          <Link key={item.key} className={tab === item.key ? 'tab active' : 'tab'} href={item.href}>
             {item.label}
           </Link>
         ))}
