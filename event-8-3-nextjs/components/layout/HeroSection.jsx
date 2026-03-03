@@ -3,7 +3,7 @@ import Link from 'next/link';
 
 const tabs = [
   { key: 'wishes', label: '💌 Gửi lời nhắn', href: '/' },
-  { key: 'home', label: '🏠 Trang chủ', href: '/wishes' }
+  { key: 'home', label: '🏠 Sự kiện', href: '/wishes' }
 ];
 
 export default function HeroSection({ event, tab }) {
