@@ -4,7 +4,7 @@ import Link from 'next/link';
 const tabs = [
   { key: 'wishes', label: '💌 Gửi lời chúc', href: '/' },
   { key: 'home', label: '🏠 Trang chủ', href: '/wishes' },
-  { key: 'game', label: '🎁 Mini game', href: '/game' }
+  { key: 'game', label: '🎡 Quay thưởng', href: '/game' }
 ];
 
 export default function HeroSection({ event, tab }) {

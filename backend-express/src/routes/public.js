@@ -4,7 +4,6 @@ const Event = require('../models/Event');
 const Wish = require('../models/Wish');
 const ChatMessage = require('../models/ChatMessage');
 const GameReward = require('../models/GameReward');
-const QuizQuestion = require('../models/QuizQuestion');
 const GameAttempt = require('../models/GameAttempt');
 
 const router = express.Router();
@@ -23,28 +22,59 @@ function extractUserIdentity(payload = {}) {
   return { userUid, userEmail, userKey, authorName };
 }
 
+function toEffectiveWeight(item) {
+  const quantity = Math.max(0, Number(item.quantity || 0));
+  const weight = Math.max(0.01, Number(item.weight || 1));
+  return quantity * weight;
+}
+
 async function pickReward(eventSlug, gameType) {
-  const pool = await GameReward.find({
-    eventSlug,
-    gameType,
-    isActive: true
-  }).lean();
+  const maxRetry = 6;
 
-  if (!pool.length) return null;
+  for (let attempt = 0; attempt < maxRetry; attempt += 1) {
+    const pool = await GameReward.find({
+      eventSlug,
+      gameType,
+      isActive: true,
+      quantity: { $gt: 0 }
+    }).lean();
 
-  const totalWeight = pool.reduce((sum, item) => sum + (item.weight || 1), 0);
-  let random = Math.random() * totalWeight;
-  let selected = pool[pool.length - 1];
+    if (!pool.length) return null;
 
-  for (const item of pool) {
-    random -= item.weight || 1;
-    if (random <= 0) {
-      selected = item;
-      break;
+    const totalWeight = pool.reduce((sum, item) => sum + toEffectiveWeight(item), 0);
+    let random = Math.random() * totalWeight;
+    let selected = pool[pool.length - 1];
+
+    for (const item of pool) {
+      random -= toEffectiveWeight(item);
+      if (random <= 0) {
+        selected = item;
+        break;
+      }
     }
+
+    const locked = await GameReward.findOneAndUpdate(
+      { _id: selected._id, quantity: { $gt: 0 } },
+      { $inc: { quantity: -1 } },
+      { new: true }
+    ).lean();
+
+    if (locked) return selected;
   }
 
-  return selected;
+  return null;
+}
+
+async function getWheelPool(eventSlug) {
+  return GameReward.find({
+    eventSlug,
+    gameType: 'wheel',
+    isActive: true,
+    quantity: { $gt: 0 }
+  })
+    .sort({ quantity: -1, label: 1 })
+    .select({ _id: 0, label: 1, quantity: 1 })
+    .lean();
 }
 
 router.get('/active-event', async (req, res) => {
@@ -186,48 +216,13 @@ router.get('/games/:eventSlug/bootstrap', async (req, res) => {
     return res.status(403).json({ message: 'This event is not public right now' });
   }
 
-  const rewards = await GameReward.find({ eventSlug, isActive: true }).lean();
-  const quizCount = await QuizQuestion.countDocuments({ eventSlug, isActive: true });
-
-  const grouped = rewards.reduce(
-    (acc, item) => {
-      if (!acc[item.gameType]) acc[item.gameType] = 0;
-      acc[item.gameType] += item.quantity || 0;
-      return acc;
-    },
-    { draw: 0, wheel: 0, flip: 0 }
-  );
+  const wheelPool = await getWheelPool(eventSlug);
+  const remainingCount = wheelPool.reduce((sum, item) => sum + Number(item.quantity || 0), 0);
 
   return res.json({
     eventSlug,
-    pools: grouped,
-    quizCount
-  });
-});
-
-router.post('/games/:eventSlug/draw', async (req, res) => {
-  const eventSlug = String(req.params.eventSlug || '').trim();
-  const identity = extractUserIdentity(req.body);
-  if (!identity.userKey) return res.status(401).json({ message: 'Login is required' });
-
-  const event = await findPublicEventBySlug(eventSlug);
-  if (!event) return res.status(403).json({ message: 'This event is not public right now' });
-
-  const reward = await pickReward(eventSlug, 'draw');
-  const rewardLabel = reward?.label || 'Hết quà trong kho bốc thăm';
-
-  const attempt = await GameAttempt.create({
-    eventSlug,
-    gameType: 'draw',
-    userUid: identity.userUid || null,
-    userEmail: identity.userEmail || null,
-    authorName: identity.authorName,
-    rewardLabel
-  });
-
-  return res.json({
-    rewardLabel,
-    attemptId: attempt._id
+    wheelPool,
+    remainingCount
   });
 });
 
@@ -240,7 +235,7 @@ router.post('/games/:eventSlug/wheel', async (req, res) => {
   if (!event) return res.status(403).json({ message: 'This event is not public right now' });
 
   const reward = await pickReward(eventSlug, 'wheel');
-  const rewardLabel = reward?.label || 'Hết quà trong vòng quay';
+  const rewardLabel = reward?.label || 'Đã hết giải quay thưởng';
 
   const attempt = await GameAttempt.create({
     eventSlug,
@@ -251,100 +246,13 @@ router.post('/games/:eventSlug/wheel', async (req, res) => {
     rewardLabel
   });
 
-  return res.json({
-    rewardLabel,
-    attemptId: attempt._id
-  });
-});
-
-router.post('/games/:eventSlug/flip', async (req, res) => {
-  const eventSlug = String(req.params.eventSlug || '').trim();
-  const selectedCard = Math.max(0, parseInt(req.body.selectedCard, 10) || 0);
-  const identity = extractUserIdentity(req.body);
-  if (!identity.userKey) return res.status(401).json({ message: 'Login is required' });
-
-  const event = await findPublicEventBySlug(eventSlug);
-  if (!event) return res.status(403).json({ message: 'This event is not public right now' });
-
-  const reward = await pickReward(eventSlug, 'flip');
-  const rewardLabel = reward?.label || 'Ô trống, nhận lời chúc tốt đẹp';
-
-  const attempt = await GameAttempt.create({
-    eventSlug,
-    gameType: 'flip',
-    userUid: identity.userUid || null,
-    userEmail: identity.userEmail || null,
-    authorName: identity.authorName,
-    rewardLabel,
-    meta: { selectedCard }
-  });
+  const remainingPool = await getWheelPool(eventSlug);
+  const remainingCount = remainingPool.reduce((sum, item) => sum + Number(item.quantity || 0), 0);
 
   return res.json({
     rewardLabel,
-    selectedCard,
-    attemptId: attempt._id
-  });
-});
-
-router.get('/games/:eventSlug/quiz/question', async (req, res) => {
-  const eventSlug = String(req.params.eventSlug || '').trim();
-  const event = await findPublicEventBySlug(eventSlug);
-  if (!event) return res.status(403).json({ message: 'This event is not public right now' });
-
-  const questions = await QuizQuestion.find({ eventSlug, isActive: true }).lean();
-  if (!questions.length) return res.status(404).json({ message: 'No quiz question available' });
-
-  const random = questions[Math.floor(Math.random() * questions.length)];
-  return res.json({
-    question: {
-      _id: random._id,
-      prompt: random.prompt,
-      options: random.options,
-      rewardAmount: random.rewardAmount
-    }
-  });
-});
-
-router.post('/games/:eventSlug/quiz/answer', async (req, res) => {
-  const eventSlug = String(req.params.eventSlug || '').trim();
-  const questionId = String(req.body.questionId || '').trim();
-  const answerIndex = parseInt(req.body.answerIndex, 10);
-  const identity = extractUserIdentity(req.body);
-
-  if (!identity.userKey) return res.status(401).json({ message: 'Login is required' });
-  if (!mongoose.Types.ObjectId.isValid(questionId)) {
-    return res.status(400).json({ message: 'Invalid question id' });
-  }
-
-  const event = await findPublicEventBySlug(eventSlug);
-  if (!event) return res.status(403).json({ message: 'This event is not public right now' });
-
-  const question = await QuizQuestion.findOne({ _id: questionId, eventSlug, isActive: true }).lean();
-  if (!question) return res.status(404).json({ message: 'Question not found' });
-
-  const correct = Number.isInteger(answerIndex) && answerIndex === question.correctIndex;
-  const rewardAmount = correct ? question.rewardAmount || 0 : 0;
-  const rewardLabel = correct ? `Thưởng ${rewardAmount.toLocaleString('vi-VN')}đ` : 'Chưa đúng, thử câu khác nhé';
-
-  const attempt = await GameAttempt.create({
-    eventSlug,
-    gameType: 'quiz',
-    userUid: identity.userUid || null,
-    userEmail: identity.userEmail || null,
-    authorName: identity.authorName,
-    rewardLabel,
-    rewardAmount,
-    meta: {
-      questionId,
-      answerIndex,
-      correct
-    }
-  });
-
-  return res.json({
-    correct,
-    rewardAmount,
-    rewardLabel,
+    remainingPool,
+    remainingCount,
     attemptId: attempt._id
   });
 });

@@ -7,7 +7,7 @@ const gameAttemptSchema = new mongoose.Schema(
       type: String,
       required: true,
       trim: true,
-      enum: ['draw', 'wheel', 'quiz', 'flip']
+      enum: ['wheel']
     },
     userUid: { type: String, trim: true, default: null, index: true },
     userEmail: { type: String, trim: true, lowercase: true, default: null, index: true },

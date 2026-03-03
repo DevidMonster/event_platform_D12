@@ -7,7 +7,7 @@ const gameRewardSchema = new mongoose.Schema(
       type: String,
       required: true,
       trim: true,
-      enum: ['draw', 'wheel', 'flip']
+      enum: ['wheel']
     },
     label: { type: String, required: true, trim: true, maxlength: 140 },
     quantity: { type: Number, default: 0, min: 0 },

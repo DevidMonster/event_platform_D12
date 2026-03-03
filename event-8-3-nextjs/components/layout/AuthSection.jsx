@@ -24,7 +24,7 @@ export default function AuthSection({
             {!hasFirebaseConfig && (
               <p className="message error">Chưa cấu hình Firebase env cho đăng nhập.</p>
             )}
-            <p>Vui lòng đăng nhập bằng Google để gửi lời chúc, thả tim và chơi mini game.</p>
+            <p>Vui lòng đăng nhập bằng Google để gửi lời chúc, thả tim và quay thưởng.</p>
             <button
               className="btn soft"
               type="button"
