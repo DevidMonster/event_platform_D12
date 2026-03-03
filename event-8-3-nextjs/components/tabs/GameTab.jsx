@@ -191,13 +191,17 @@ export default function GameTab({ user }) {
     const targetIndex = pickTargetIndex(labels, rewardLabel);
     const targetCenter = targetIndex * segment + segment / 2;
     const landingDeg = (360 - targetCenter + 360) % 360;
-    const extraTurn = (4 + Math.floor(Math.random() * 4)) * 360;
+    const extraTurn = (6 + Math.floor(Math.random() * 4)) * 360;
 
-    setWheelRotateDeg((prev) => prev + extraTurn + landingDeg);
+    setWheelRotateDeg((prev) => {
+      const normalizedPrev = ((prev % 360) + 360) % 360;
+      const deltaToTarget = (landingDeg - normalizedPrev + 360) % 360;
+      return prev + extraTurn + deltaToTarget;
+    });
   }
 
   async function runWheel() {
-    const spinDurationMs = 2200;
+    const spinDurationMs = 3400;
 
     if (!wheelLabels.length) {
       setMessage('Đã hết giải. Vui lòng nạp thêm giải thưởng.');
