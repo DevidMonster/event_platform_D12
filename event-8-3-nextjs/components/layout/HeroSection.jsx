@@ -2,8 +2,8 @@ import Image from 'next/image';
 import Link from 'next/link';
 
 const tabs = [
-  { key: 'wishes', label: 'Gui loi nhan', href: '/' },
-  { key: 'home', label: 'Trang chu', href: '/wishes' }
+  { key: 'wishes', label: '💌 Gửi lời nhắn', href: '/' },
+  { key: 'home', label: '🏠 Trang chủ', href: '/wishes' }
 ];
 
 export default function HeroSection({ event, tab }) {
