@@ -21,7 +21,7 @@ export default function HeroSection({ event, tab }) {
           />
           <span className="brand-name">D12 Event</span>
         </div>
-        <p className="hero-kicker">Su kien 8/3</p>
+        <p className="hero-kicker">Sự kiện 8/3</p>
       </div>
 
       <h1>{event.name}</h1>

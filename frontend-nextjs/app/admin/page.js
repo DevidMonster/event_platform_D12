@@ -5,7 +5,7 @@ import { useEffect, useMemo, useState } from 'react';
 export default function AdminPage() {
   const [adminKey, setAdminKey] = useState('');
   const [events, setEvents] = useState([]);
-  const [name, setName] = useState('Su kien moi');
+  const [name, setName] = useState('Sự kiện mới');
   const [slug, setSlug] = useState('su-kien-moi');
   const [publicUrl, setPublicUrl] = useState('http://localhost:3001');
   const [description, setDescription] = useState('');
@@ -25,7 +25,7 @@ export default function AdminPage() {
     const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/admin/events`, { headers });
     const json = await res.json();
     if (!res.ok) {
-      setMessage(json.message || 'Khong tai duoc danh sach event');
+      setMessage(json.message || 'Không tải được danh sách sự kiện');
       return;
     }
     setEvents(json);
@@ -47,11 +47,11 @@ export default function AdminPage() {
 
     const json = await res.json();
     if (!res.ok) {
-      setMessage(json.message || 'Tao event that bai');
+      setMessage(json.message || 'Tạo sự kiện thất bại');
       return;
     }
 
-    setMessage('Da tao event');
+    setMessage('Đã tạo sự kiện');
     await loadEvents();
   }
 
@@ -64,19 +64,19 @@ export default function AdminPage() {
 
     const json = await res.json();
     if (!res.ok) {
-      setMessage(json.message || 'Set active that bai');
+      setMessage(json.message || 'Đặt sự kiện active thất bại');
       return;
     }
 
-    setMessage('Da chuyen event active');
+    setMessage('Đã chuyển sự kiện active');
     await loadEvents();
   }
 
   return (
     <main className="container">
       <section className="card">
-        <h1>Admin Event</h1>
-        <p>Nhap Admin Key de quan tri su kien.</p>
+        <h1>Quản trị sự kiện</h1>
+        <p>Nhập Admin Key để quản trị sự kiện.</p>
         <input
           placeholder="Admin key"
           value={adminKey}
@@ -86,33 +86,33 @@ export default function AdminPage() {
       </section>
 
       <section className="card">
-        <h2>Tao su kien moi</h2>
+        <h2>Tạo sự kiện mới</h2>
         <form onSubmit={createEvent}>
-          <input value={name} onChange={(e) => setName(e.target.value)} placeholder="Ten su kien" />
+          <input value={name} onChange={(e) => setName(e.target.value)} placeholder="Tên sự kiện" />
           <input value={slug} onChange={(e) => setSlug(e.target.value)} placeholder="slug" />
           <input
             value={publicUrl}
             onChange={(e) => setPublicUrl(e.target.value)}
-            placeholder="Public URL project con"
+            placeholder="Public URL dự án con"
           />
           <textarea
             value={description}
             onChange={(e) => setDescription(e.target.value)}
-            placeholder="Mo ta"
+            placeholder="Mô tả"
           />
-          <button>Tao event</button>
+          <button>Tạo sự kiện</button>
         </form>
       </section>
 
       <section className="card">
-        <h2>Danh sach su kien</h2>
+        <h2>Danh sách sự kiện</h2>
         {events.map((ev) => (
           <div key={ev._id} className="card">
             <strong>{ev.name}</strong>
             <p>Slug: {ev.slug}</p>
-            <p>Public URL: {ev.publicUrl || '(chua set)'}</p>
+            <p>Public URL: {ev.publicUrl || '(chưa cài đặt)'}</p>
             <p>Active: {ev.isActive ? 'Yes' : 'No'}</p>
-            <button onClick={() => setActive(ev._id)}>Dat lam su kien chinh</button>
+            <button onClick={() => setActive(ev._id)}>Đặt làm sự kiện chính</button>
           </div>
         ))}
       </section>
