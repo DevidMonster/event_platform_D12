@@ -1103,16 +1103,22 @@ body {
   position: absolute;
   top: 50%;
   left: 50%;
-  transform: translate(-50%, -50%) rotate(calc(var(--i) * (360deg / var(--total)))) translateY(-78px);
+  width: 74px;
+  text-align: center;
+  transform:
+    translate(-50%, -50%)
+    rotate(calc((var(--i) + 0.5) * (360deg / var(--total))))
+    translateY(-72px);
   transform-origin: center;
 }
 
 .wheel-label b {
   display: inline-block;
-  transform: rotate(calc(var(--i) * (-360deg / var(--total)) - var(--wheel-rot, 0deg)));
+  transform: rotate(calc((var(--i) + 0.5) * (-360deg / var(--total)) - var(--wheel-rot, 0deg)));
   color: #7f3a4f;
   font-weight: 800;
   font-size: 0.82rem;
+  line-height: 1.1;
   text-shadow: 0 1px 0 rgba(255, 255, 255, 0.5);
 }
 
