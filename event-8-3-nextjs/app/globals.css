@@ -1094,16 +1094,7 @@ body {
   border-radius: 50%;
   border: 8px solid #fff;
   box-shadow: 0 14px 24px rgba(122, 37, 70, 0.22);
-  background:
-    conic-gradient(
-      from -30deg,
-      #ffd0df 0deg 60deg,
-      #ffe5be 60deg 120deg,
-      #ffdce7 120deg 180deg,
-      #ffc8d9 180deg 240deg,
-      #ffe6c8 240deg 300deg,
-      #ffd8eb 300deg 360deg
-    );
+  background: var(--wheel-bg, conic-gradient(from -90deg, #ffd0df 0deg 360deg));
   position: relative;
   transition: transform 2.2s cubic-bezier(0.12, 0.9, 0.2, 1);
 }

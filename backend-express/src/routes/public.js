@@ -5,6 +5,7 @@ const Wish = require('../models/Wish');
 const ChatMessage = require('../models/ChatMessage');
 const GameReward = require('../models/GameReward');
 const GameAttempt = require('../models/GameAttempt');
+const { seedMiniGames } = require('../seed');
 
 const router = express.Router();
 
@@ -75,6 +76,60 @@ async function getWheelPool(eventSlug) {
     .sort({ quantity: -1, label: 1 })
     .select({ _id: 0, label: 1, quantity: 1 })
     .lean();
+}
+
+async function getWheelStats(eventSlug) {
+  const rewardLabels = await GameReward.distinct('label', {
+    eventSlug,
+    gameType: 'wheel'
+  });
+
+  if (!rewardLabels.length) {
+    return {
+      rewardStats: [],
+      recentWinners: []
+    };
+  }
+
+  const [rewardStats, recentWinners] = await Promise.all([
+    GameAttempt.aggregate([
+      {
+        $match: {
+          eventSlug,
+          gameType: 'wheel',
+          rewardLabel: { $in: rewardLabels }
+        }
+      },
+      {
+        $group: {
+          _id: '$rewardLabel',
+          count: { $sum: 1 }
+        }
+      },
+      {
+        $project: {
+          _id: 0,
+          label: '$_id',
+          count: 1
+        }
+      },
+      { $sort: { count: -1, label: 1 } }
+    ]),
+    GameAttempt.find({
+      eventSlug,
+      gameType: 'wheel',
+      rewardLabel: { $in: rewardLabels }
+    })
+      .sort({ createdAt: -1 })
+      .limit(20)
+      .select({ _id: 1, authorName: 1, rewardLabel: 1, createdAt: 1 })
+      .lean()
+  ]);
+
+  return {
+    rewardStats,
+    recentWinners
+  };
 }
 
 router.get('/active-event', async (req, res) => {
@@ -218,11 +273,41 @@ router.get('/games/:eventSlug/bootstrap', async (req, res) => {
 
   const wheelPool = await getWheelPool(eventSlug);
   const remainingCount = wheelPool.reduce((sum, item) => sum + Number(item.quantity || 0), 0);
+  const { rewardStats, recentWinners } = await getWheelStats(eventSlug);
 
   return res.json({
     eventSlug,
     wheelPool,
-    remainingCount
+    remainingCount,
+    rewardStats,
+    recentWinners
+  });
+});
+
+router.post('/games/:eventSlug/reset', async (req, res) => {
+  const eventSlug = String(req.params.eventSlug || '').trim();
+  if (!eventSlug) return res.status(400).json({ message: 'eventSlug is required' });
+
+  const identity = extractUserIdentity(req.body);
+  if (!identity.userKey) return res.status(401).json({ message: 'Login is required' });
+
+  const event = await findPublicEventBySlug(eventSlug);
+  if (!event) {
+    return res.status(403).json({ message: 'This event is not public right now' });
+  }
+
+  await seedMiniGames(eventSlug);
+  await GameAttempt.deleteMany({ eventSlug, gameType: 'wheel' });
+
+  const wheelPool = await getWheelPool(eventSlug);
+  const remainingCount = wheelPool.reduce((sum, item) => sum + Number(item.quantity || 0), 0);
+  const { rewardStats, recentWinners } = await getWheelStats(eventSlug);
+
+  return res.json({
+    wheelPool,
+    remainingCount,
+    rewardStats,
+    recentWinners
   });
 });
 
@@ -248,12 +333,15 @@ router.post('/games/:eventSlug/wheel', async (req, res) => {
 
   const remainingPool = await getWheelPool(eventSlug);
   const remainingCount = remainingPool.reduce((sum, item) => sum + Number(item.quantity || 0), 0);
+  const { rewardStats, recentWinners } = await getWheelStats(eventSlug);
 
   return res.json({
     rewardLabel,
     remainingPool,
     remainingCount,
-    attemptId: attempt._id
+    attemptId: attempt._id,
+    rewardStats,
+    recentWinners
   });
 });
 

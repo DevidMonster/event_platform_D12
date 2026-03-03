@@ -3,10 +3,10 @@ const GameReward = require('./models/GameReward');
 
 async function seedMiniGames(eventSlug) {
   const rewards = [
-    { gameType: 'wheel', label: 'Giải nhất 100K', quantity: 1, weight: 1 },
-    { gameType: 'wheel', label: 'Giải nhì 50K', quantity: 2, weight: 1 },
-    { gameType: 'wheel', label: 'Giải ba 20K', quantity: 5, weight: 1 },
-    { gameType: 'wheel', label: 'Giải secret', quantity: 1, weight: 1 }
+    { gameType: 'wheel', label: 'Giải 100K', quantity: 1, weight: 1 },
+    { gameType: 'wheel', label: 'Giải 50K', quantity: 3, weight: 1 },
+    { gameType: 'wheel', label: 'Giải 20K', quantity: 5, weight: 1 },
+    { gameType: 'wheel', label: 'secret', quantity: 1, weight: 1 }
   ];
 
   await GameReward.updateMany({ eventSlug }, { $set: { isActive: false } });
@@ -16,12 +16,11 @@ async function seedMiniGames(eventSlug) {
       GameReward.updateOne(
         { eventSlug, gameType: item.gameType, label: item.label },
         {
-          $set: { isActive: true, weight: item.weight },
+          $set: { isActive: true, weight: item.weight, quantity: item.quantity },
           $setOnInsert: {
             eventSlug,
             gameType: item.gameType,
-            label: item.label,
-            quantity: item.quantity
+            label: item.label
           }
         },
         { upsert: true }
@@ -61,4 +60,4 @@ async function seedDefaultEvent() {
   console.log('Seeded wheel rewards for event: 8-3-2026');
 }
 
-module.exports = { seedDefaultEvent };
+module.exports = { seedDefaultEvent, seedMiniGames };
