@@ -87,6 +87,12 @@ function formatWinnerTime(value) {
   });
 }
 
+function sleep(ms) {
+  return new Promise((resolve) => {
+    setTimeout(resolve, ms);
+  });
+}
+
 export default function GameTab({ user }) {
   const [message, setMessage] = useState('');
   const [bootLoading, setBootLoading] = useState(true);
@@ -191,6 +197,8 @@ export default function GameTab({ user }) {
   }
 
   async function runWheel() {
+    const spinDurationMs = 2200;
+
     if (!wheelLabels.length) {
       setMessage('Đã hết giải. Vui lòng nạp thêm giải thưởng.');
       return;
@@ -207,9 +215,8 @@ export default function GameTab({ user }) {
       const rewardLabel = String(json.rewardLabel || '').trim() || 'Đã hết giải quay thưởng';
       animateWheelToReward(rewardLabel);
 
-      setTimeout(() => {
-        setWheelResult(rewardLabel);
-      }, 2200);
+      await sleep(spinDurationMs);
+      setWheelResult(rewardLabel);
 
       if (Array.isArray(json.remainingPool)) {
         setWheelPool(normalizePool(json.remainingPool));
@@ -227,7 +234,7 @@ export default function GameTab({ user }) {
     } catch (e) {
       setMessage(e.message || 'Quay thưởng thất bại');
     } finally {
-      setTimeout(() => setWheelLoading(false), 2200);
+      setWheelLoading(false);
     }
   }
 
