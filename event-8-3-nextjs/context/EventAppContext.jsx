@@ -43,7 +43,7 @@ export function EventAppProvider({ children }) {
   }, [wishes, user]);
 
   const currentUserKey = useMemo(
-    () => String(user?.uid || user?.email || '').trim().toLowerCase(),
+    () => String(user?.email || user?.uid || '').trim().toLowerCase(),
     [user]
   );
   const socketUrl = process.env.NEXT_PUBLIC_SOCKET_URL || process.env.NEXT_PUBLIC_API_URL;

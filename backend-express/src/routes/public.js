@@ -259,14 +259,19 @@ router.post(
   asyncHandler(async (req, res) => {
   const { wishId } = req.params;
   const { userUid, userEmail } = req.body;
+  const normalizedUserUid = String(userUid || '').trim().toLowerCase();
   const normalizedUserEmail = String(userEmail || '').trim().toLowerCase();
 
   if (!mongoose.Types.ObjectId.isValid(wishId)) {
     return res.status(400).json({ message: 'Invalid wish id' });
   }
 
-  const userKey = String(userUid || userEmail || '').trim().toLowerCase();
-  if (!userKey) {
+  const candidateKeys = Array.from(
+    new Set([normalizedUserEmail, normalizedUserUid].filter(Boolean))
+  );
+  const userKey = normalizedUserEmail || normalizedUserUid;
+
+  if (!userKey || !candidateKeys.length) {
     return res.status(400).json({ message: 'Login is required to like a wish' });
   }
 
@@ -281,7 +286,7 @@ router.post(
   }
 
   const unlikeUpdate = {
-    $pull: { likeUserKeys: userKey },
+    $pull: { likeUserKeys: { $in: candidateKeys } },
     $inc: { likesCount: -1 }
   };
   if (normalizedUserEmail) {
@@ -289,14 +294,17 @@ router.post(
   }
 
   const unliked = await Wish.findOneAndUpdate(
-    { _id: wishId, likeUserKeys: userKey },
+    { _id: wishId, likeUserKeys: { $in: candidateKeys } },
     unlikeUpdate,
     { new: true }
   ).lean();
 
   if (unliked) {
-    const safeLikesCount = Math.max(0, unliked.likesCount || 0);
-    if (safeLikesCount !== (unliked.likesCount || 0)) {
+    const currentLikesCount = Math.max(0, Number(unliked.likesCount || 0));
+    const keysCount = Array.isArray(unliked.likeUserKeys) ? unliked.likeUserKeys.length : 0;
+    const safeLikesCount = Math.min(currentLikesCount, keysCount);
+
+    if (safeLikesCount !== currentLikesCount) {
       await Wish.updateOne({ _id: wishId }, { $set: { likesCount: safeLikesCount } });
     }
 
@@ -324,22 +332,48 @@ router.post(
   }
 
   const liked = await Wish.findOneAndUpdate(
-    { _id: wishId, likeUserKeys: { $ne: userKey } },
+    { _id: wishId, likeUserKeys: { $nin: candidateKeys } },
     likeUpdate,
     { new: true }
   ).lean();
+
+  if (!liked) {
+    const currentWish = await Wish.findById(wishId).select({ likesCount: 1 }).lean();
+    const fallbackLikesCount = Math.max(0, Number(currentWish?.likesCount || 0));
+
+    const io = req.app?.locals?.io;
+    if (io && event?.slug) {
+      io.to(`event:${event.slug}`).emit('wish_likes_updated', {
+        wishId,
+        likesCount: fallbackLikesCount
+      });
+    }
+
+    return res.json({
+      wishId,
+      likesCount: fallbackLikesCount,
+      liked: true
+    });
+  }
+
+  const currentLikesCount = Math.max(0, Number(liked?.likesCount || 0));
+  const keysCount = Array.isArray(liked?.likeUserKeys) ? liked.likeUserKeys.length : 0;
+  const safeLikesCount = Math.min(currentLikesCount, keysCount);
+  if (liked && safeLikesCount !== currentLikesCount) {
+    await Wish.updateOne({ _id: wishId }, { $set: { likesCount: safeLikesCount } });
+  }
 
   const io = req.app?.locals?.io;
   if (io && event?.slug) {
     io.to(`event:${event.slug}`).emit('wish_likes_updated', {
       wishId,
-      likesCount: liked?.likesCount || 0
+      likesCount: safeLikesCount
     });
   }
 
   return res.json({
     wishId,
-    likesCount: liked?.likesCount || 0,
+    likesCount: safeLikesCount,
     liked: true
   });
   })
