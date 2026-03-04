@@ -1,7 +1,8 @@
 'use client';
 
-import { createContext, useContext, useEffect, useMemo, useState } from 'react';
+import { createContext, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { onAuthStateChanged, signInWithPopup, signOut } from 'firebase/auth';
+import { io } from 'socket.io-client';
 import { auth, googleProvider, hasFirebaseConfig } from '../lib/firebase';
 import { eventSlug } from '../lib/event-content';
 
@@ -19,6 +20,7 @@ export function EventAppProvider({ children }) {
   const [authMessage, setAuthMessage] = useState('');
 
   const [likeLoadingIds, setLikeLoadingIds] = useState([]);
+  const socketRef = useRef(null);
 
   const wishes = useMemo(() => data?.wishes || [], [data]);
   const participantsCount = useMemo(() => {
@@ -44,6 +46,7 @@ export function EventAppProvider({ children }) {
     () => String(user?.uid || user?.email || '').trim().toLowerCase(),
     [user]
   );
+  const socketUrl = process.env.NEXT_PUBLIC_SOCKET_URL || process.env.NEXT_PUBLIC_API_URL;
 
   async function load() {
     setLoading(true);
@@ -64,6 +67,60 @@ export function EventAppProvider({ children }) {
   useEffect(() => {
     load();
   }, []);
+
+  useEffect(() => {
+    if (!socketUrl || !eventSlug) return undefined;
+
+    const socket = io(socketUrl, {
+      transports: ['websocket', 'polling']
+    });
+
+    socketRef.current = socket;
+
+    socket.on('connect', () => {
+      socket.emit('join_event_stream', { eventSlug });
+    });
+
+    socket.on('wish_created', (incomingWish) => {
+      const wishId = String(incomingWish?._id || '').trim();
+      if (!wishId) return;
+
+      setData((prev) => {
+        if (!prev?.wishes) return prev;
+        const exists = prev.wishes.some((item) => String(item?._id) === wishId);
+        if (exists) return prev;
+        return {
+          ...prev,
+          wishes: [incomingWish, ...prev.wishes]
+        };
+      });
+    });
+
+    socket.on('wish_likes_updated', (payload = {}) => {
+      const wishId = String(payload.wishId || '').trim();
+      if (!wishId) return;
+      const likesCount = Math.max(0, Number(payload.likesCount || 0));
+
+      setData((prev) => {
+        if (!prev?.wishes) return prev;
+
+        let changed = false;
+        const nextWishes = prev.wishes.map((wish) => {
+          if (String(wish?._id) !== wishId) return wish;
+          changed = true;
+          return { ...wish, likesCount };
+        });
+
+        if (!changed) return prev;
+        return { ...prev, wishes: nextWishes };
+      });
+    });
+
+    return () => {
+      socket.disconnect();
+      if (socketRef.current === socket) socketRef.current = null;
+    };
+  }, [socketUrl]);
 
   useEffect(() => {
     if (!hasFirebaseConfig || !auth) {
@@ -114,10 +171,12 @@ export function EventAppProvider({ children }) {
 
       setContent('');
       setData((prev) => {
-        if (!prev) return prev;
+        if (!prev?.wishes) return prev;
+        const exists = prev.wishes.some((item) => String(item?._id) === String(createdWish?._id));
+        if (exists) return prev;
         return {
           ...prev,
-          wishes: [createdWish, ...(prev.wishes || [])]
+          wishes: [createdWish, ...prev.wishes]
         };
       });
     } catch (e) {

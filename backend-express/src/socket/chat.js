@@ -15,6 +15,23 @@ async function isPublicEvent(eventSlug) {
 
 function setupChatSocket(io) {
   io.on('connection', (socket) => {
+    socket.on('join_event_stream', async (payload = {}) => {
+      const eventSlug = normalizeText(payload.eventSlug);
+      if (!eventSlug) {
+        socket.emit('chat_error', { message: 'eventSlug is required.' });
+        return;
+      }
+
+      const canJoin = await isPublicEvent(eventSlug);
+      if (!canJoin) {
+        socket.emit('chat_error', { message: 'This event is not public right now.' });
+        return;
+      }
+
+      socket.join(`event:${eventSlug}`);
+      socket.emit('event_stream_joined', { eventSlug });
+    });
+
     socket.on('join_room', async (payload = {}) => {
       const eventSlug = normalizeText(payload.eventSlug);
       const userUid = normalizeText(payload.userUid);

@@ -44,6 +44,7 @@ const io = new Server(server, {
   }
 });
 
+app.locals.io = io;
 setupChatSocket(io);
 
 async function start() {

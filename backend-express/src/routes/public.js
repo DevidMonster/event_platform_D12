@@ -184,6 +184,24 @@ router.post('/wishes', async (req, res) => {
     isApproved: true
   });
 
+  const io = req.app?.locals?.io;
+  if (io) {
+    io.to(`event:${eventSlug}`).emit('wish_created', {
+      _id: wish._id,
+      eventId: wish.eventId,
+      userUid: wish.userUid,
+      userEmail: wish.userEmail,
+      avatarUrl: wish.avatarUrl,
+      authorName: wish.authorName,
+      content: wish.content,
+      likeUserKeys: wish.likeUserKeys || [],
+      likesCount: wish.likesCount || 0,
+      isApproved: wish.isApproved,
+      createdAt: wish.createdAt,
+      updatedAt: wish.updatedAt
+    });
+  }
+
   return res.status(201).json(wish);
 });
 
@@ -242,6 +260,15 @@ router.post('/wishes/:wishId/like', async (req, res) => {
     if (safeLikesCount !== (unliked.likesCount || 0)) {
       await Wish.updateOne({ _id: wishId }, { $set: { likesCount: safeLikesCount } });
     }
+
+    const io = req.app?.locals?.io;
+    if (io && event?.slug) {
+      io.to(`event:${event.slug}`).emit('wish_likes_updated', {
+        wishId,
+        likesCount: safeLikesCount
+      });
+    }
+
     return res.json({
       wishId,
       likesCount: safeLikesCount,
@@ -254,6 +281,14 @@ router.post('/wishes/:wishId/like', async (req, res) => {
     { $addToSet: { likeUserKeys: userKey }, $inc: { likesCount: 1 } },
     { new: true }
   ).lean();
+
+  const io = req.app?.locals?.io;
+  if (io && event?.slug) {
+    io.to(`event:${event.slug}`).emit('wish_likes_updated', {
+      wishId,
+      likesCount: liked?.likesCount || 0
+    });
+  }
 
   return res.json({
     wishId,

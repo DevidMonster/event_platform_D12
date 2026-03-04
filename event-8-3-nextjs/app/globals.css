@@ -464,6 +464,58 @@ body {
   margin-top: 10px;
 }
 
+.top-liked-wrap {
+  margin-top: 14px;
+}
+
+.top-liked-wrap h3 {
+  margin: 0 0 10px;
+}
+
+.top-liked-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  border: 1px solid #efcfd9;
+  border-radius: 14px;
+  padding: 10px 12px;
+  background: linear-gradient(145deg, #fff, #fff7fb);
+}
+
+.top-liked-avatar {
+  width: 46px;
+  height: 46px;
+  border-radius: 999px;
+  object-fit: cover;
+  border: 1px solid #e7c9d4;
+  background: #fff;
+  flex: 0 0 46px;
+}
+
+.top-liked-avatar.fallback {
+  display: grid;
+  place-items: center;
+  color: #fff;
+  font-weight: 700;
+  font-size: 0.86rem;
+  background: linear-gradient(130deg, #d14f79, #a63a66);
+}
+
+.top-liked-info {
+  min-width: 0;
+}
+
+.top-liked-name {
+  margin: 0;
+  color: #6f3d4e;
+  font-weight: 800;
+}
+
+.top-liked-meta {
+  margin: 4px 0 0;
+  color: #875465;
+}
+
 .wish-banner {
   margin-top: 14px;
   border-radius: 14px;
