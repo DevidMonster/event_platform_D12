@@ -38,6 +38,7 @@ body {
 }
 
 .chat-fab {
+  position: relative;
   width: 58px;
   height: 58px;
   border-radius: 999px;
@@ -48,6 +49,25 @@ body {
   background: linear-gradient(145deg, #d93670, #b32758);
   box-shadow: 0 14px 30px rgba(159, 33, 79, 0.35);
   transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.chat-fab-badge {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  min-width: 20px;
+  height: 20px;
+  border-radius: 999px;
+  padding: 0 6px;
+  background: #e53935;
+  color: #fff;
+  border: 2px solid #fff;
+  display: grid;
+  place-items: center;
+  font-size: 0.7rem;
+  font-weight: 700;
+  line-height: 1;
+  box-shadow: 0 6px 12px rgba(130, 28, 28, 0.35);
 }
 
 .chat-fab:hover {

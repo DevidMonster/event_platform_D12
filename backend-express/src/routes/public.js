@@ -278,12 +278,18 @@ router.get(
     return res.status(403).json({ message: 'This event is not public right now' });
   }
 
-  const messages = await ChatMessage.find({ eventSlug })
-    .sort({ createdAt: -1 })
-    .limit(limit)
-    .lean();
+  const [messages, totalCount] = await Promise.all([
+    ChatMessage.find({ eventSlug })
+      .sort({ createdAt: -1 })
+      .limit(limit)
+      .lean(),
+    ChatMessage.countDocuments({ eventSlug })
+  ]);
 
-  return res.json({ messages: messages.reverse() });
+  return res.json({
+    messages: messages.reverse(),
+    totalCount: Math.max(0, Number(totalCount || 0))
+  });
   })
 );
 

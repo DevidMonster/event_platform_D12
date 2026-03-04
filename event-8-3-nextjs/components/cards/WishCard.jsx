@@ -88,7 +88,7 @@ export default function WishCard({ wish, index, liked, likeBusy, user, onLike })
           title="Xem người đã thả tim"
           aria-expanded={showLikers}
         >
-          <span>📒</span>
+          <span>Đã tim</span>
           <span className="like-list-caret">{showLikers ? '▲' : '▼'}</span>
         </button>
       </div>

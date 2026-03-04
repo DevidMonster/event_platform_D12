@@ -21,6 +21,7 @@ export default function ChatWidget({ eventSlug, user }) {
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [messages, setMessages] = useState([]);
+  const [chatCount, setChatCount] = useState(0);
   const [input, setInput] = useState('');
   const [chatError, setChatError] = useState('');
 
@@ -29,10 +30,10 @@ export default function ChatWidget({ eventSlug, user }) {
 
   const apiUrl = process.env.NEXT_PUBLIC_API_URL;
   const socketUrl = process.env.NEXT_PUBLIC_SOCKET_URL || apiUrl;
-
   const canChat = Boolean(user?.uid || user?.email);
-
   const authorName = useMemo(() => user?.displayName || user?.email || 'Khách', [user]);
+
+  const badgeText = chatCount > 99 ? '99+' : String(chatCount);
 
   function scrollToBottom(behavior = 'auto') {
     if (!listRef.current) return;
@@ -41,6 +42,35 @@ export default function ChatWidget({ eventSlug, user }) {
       behavior
     });
   }
+
+  useEffect(() => {
+    if (!eventSlug || !apiUrl) return undefined;
+
+    let mounted = true;
+
+    async function preloadMessages() {
+      try {
+        const res = await fetch(`${apiUrl}/api/public/chat/${eventSlug}/messages?limit=50`, {
+          cache: 'no-store'
+        });
+        const json = await res.json();
+        if (!res.ok || !mounted) return;
+
+        const nextMessages = Array.isArray(json.messages) ? json.messages : [];
+        const nextCount = Math.max(0, Number(json.totalCount || nextMessages.length || 0));
+        setMessages((prev) => (prev.length > 0 ? prev : nextMessages));
+        setChatCount((prev) => (prev > nextCount ? prev : nextCount));
+      } catch {
+        // Ignore preload errors; full load will show explicit error when chat opens.
+      }
+    }
+
+    preloadMessages();
+
+    return () => {
+      mounted = false;
+    };
+  }, [eventSlug, apiUrl]);
 
   useEffect(() => {
     if (!open || !eventSlug || !canChat || !socketUrl) return undefined;
@@ -57,7 +87,9 @@ export default function ChatWidget({ eventSlug, user }) {
         const json = await res.json();
         if (!res.ok) throw new Error(json.message || 'Không tải được lịch sử chat');
         if (mounted) {
-          setMessages(Array.isArray(json.messages) ? json.messages : []);
+          const nextMessages = Array.isArray(json.messages) ? json.messages : [];
+          setMessages(nextMessages);
+          setChatCount(Math.max(0, Number(json.totalCount || nextMessages.length || 0)));
           window.requestAnimationFrame(() => scrollToBottom('auto'));
         }
       } catch (e) {
@@ -88,6 +120,7 @@ export default function ChatWidget({ eventSlug, user }) {
         const exists = prev.some((item) => String(item._id) === String(message._id));
         if (exists) return prev;
         const next = [...prev, message];
+        setChatCount((count) => count + 1);
         window.requestAnimationFrame(() => scrollToBottom('smooth'));
         return next;
       });
@@ -131,6 +164,7 @@ export default function ChatWidget({ eventSlug, user }) {
     <div className="chat-widget-root">
       <button className={open ? 'chat-fab open' : 'chat-fab'} onClick={() => setOpen((v) => !v)}>
         <span>{open ? '✖' : '💬'}</span>
+        {chatCount > 0 && <span className="chat-fab-badge">{badgeText}</span>}
       </button>
 
       <section className={open ? 'chat-panel show' : 'chat-panel'}>
@@ -143,7 +177,9 @@ export default function ChatWidget({ eventSlug, user }) {
           {loading && <p className="chat-note">Đang tải tin nhắn...</p>}
           {!loading && messages.length === 0 && <p className="chat-note">Chưa có tin nhắn nào.</p>}
           {messages.map((item) => {
-            const mine = (user?.uid && item.userUid === user.uid) || (user?.email && item.userEmail === user.email);
+            const mine =
+              (user?.uid && item.userUid === user.uid) ||
+              (user?.email && item.userEmail === String(user.email).toLowerCase());
             return (
               <article key={item._id} className={mine ? 'chat-item mine' : 'chat-item'}>
                 <ChatAvatar name={item.authorName} avatarUrl={item.avatarUrl} />
