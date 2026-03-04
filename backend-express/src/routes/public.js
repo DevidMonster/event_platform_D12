@@ -8,6 +8,13 @@ const GameAttempt = require('../models/GameAttempt');
 const { seedMiniGames } = require('../seed');
 
 const router = express.Router();
+const MAX_WISH_CONTENT_LENGTH = 10000;
+
+function asyncHandler(handler) {
+  return (req, res, next) => {
+    Promise.resolve(handler(req, res, next)).catch(next);
+  };
+}
 
 async function findPublicEventBySlug(slug) {
   return Event.findOne({ slug, status: 'published', isActive: true }).lean();
@@ -132,15 +139,20 @@ async function getWheelStats(eventSlug) {
   };
 }
 
-router.get('/active-event', async (req, res) => {
+router.get(
+  '/active-event',
+  asyncHandler(async (req, res) => {
   const event = await Event.findOne({ isActive: true, status: 'published' }).lean();
   if (!event) {
     return res.status(404).json({ message: 'No active event found' });
   }
   return res.json(event);
-});
+  })
+);
 
-router.get('/events/:slug', async (req, res) => {
+router.get(
+  '/events/:slug',
+  asyncHandler(async (req, res) => {
   const event = await findPublicEventBySlug(req.params.slug);
   if (!event) {
     return res.status(403).json({ message: 'This event is not public right now' });
@@ -151,9 +163,12 @@ router.get('/events/:slug', async (req, res) => {
     .lean();
 
   return res.json({ event, wishes });
-});
+  })
+);
 
-router.post('/wishes', async (req, res) => {
+router.post(
+  '/wishes',
+  asyncHandler(async (req, res) => {
   const { eventSlug, authorName, content, userUid, userEmail, avatarUrl } = req.body;
   const normalizedAuthorName = String(authorName || '').trim();
   const normalizedContent = String(content || '').trim();
@@ -167,6 +182,11 @@ router.post('/wishes', async (req, res) => {
 
   if (!normalizedUserUid && !normalizedUserEmail) {
     return res.status(401).json({ message: 'Login is required to submit a wish' });
+  }
+  if (normalizedContent.length > MAX_WISH_CONTENT_LENGTH) {
+    return res.status(400).json({
+      message: `Nội dung lời chúc quá dài (tối đa ${MAX_WISH_CONTENT_LENGTH} ký tự).`
+    });
   }
 
   const event = await findPublicEventBySlug(eventSlug);
@@ -203,9 +223,12 @@ router.post('/wishes', async (req, res) => {
   }
 
   return res.status(201).json(wish);
-});
+  })
+);
 
-router.get('/chat/:eventSlug/messages', async (req, res) => {
+router.get(
+  '/chat/:eventSlug/messages',
+  asyncHandler(async (req, res) => {
   const eventSlug = String(req.params.eventSlug || '').trim();
   const limit = Math.min(Math.max(parseInt(req.query.limit, 10) || 40, 1), 100);
 
@@ -224,9 +247,12 @@ router.get('/chat/:eventSlug/messages', async (req, res) => {
     .lean();
 
   return res.json({ messages: messages.reverse() });
-});
+  })
+);
 
-router.post('/wishes/:wishId/like', async (req, res) => {
+router.post(
+  '/wishes/:wishId/like',
+  asyncHandler(async (req, res) => {
   const { wishId } = req.params;
   const { userUid, userEmail } = req.body;
 
@@ -295,9 +321,12 @@ router.post('/wishes/:wishId/like', async (req, res) => {
     likesCount: liked?.likesCount || 0,
     liked: true
   });
-});
+  })
+);
 
-router.get('/games/:eventSlug/bootstrap', async (req, res) => {
+router.get(
+  '/games/:eventSlug/bootstrap',
+  asyncHandler(async (req, res) => {
   const eventSlug = String(req.params.eventSlug || '').trim();
   if (!eventSlug) return res.status(400).json({ message: 'eventSlug is required' });
 
@@ -317,9 +346,12 @@ router.get('/games/:eventSlug/bootstrap', async (req, res) => {
     rewardStats,
     recentWinners
   });
-});
+  })
+);
 
-router.post('/games/:eventSlug/reset', async (req, res) => {
+router.post(
+  '/games/:eventSlug/reset',
+  asyncHandler(async (req, res) => {
   const eventSlug = String(req.params.eventSlug || '').trim();
   if (!eventSlug) return res.status(400).json({ message: 'eventSlug is required' });
 
@@ -344,9 +376,12 @@ router.post('/games/:eventSlug/reset', async (req, res) => {
     rewardStats,
     recentWinners
   });
-});
+  })
+);
 
-router.post('/games/:eventSlug/wheel', async (req, res) => {
+router.post(
+  '/games/:eventSlug/wheel',
+  asyncHandler(async (req, res) => {
   const eventSlug = String(req.params.eventSlug || '').trim();
   const identity = extractUserIdentity(req.body);
   if (!identity.userKey) return res.status(401).json({ message: 'Login is required' });
@@ -378,6 +413,7 @@ router.post('/games/:eventSlug/wheel', async (req, res) => {
     rewardStats,
     recentWinners
   });
-});
+  })
+);
 
 module.exports = router;

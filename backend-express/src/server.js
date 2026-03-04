@@ -32,7 +32,20 @@ app.use('/api/admin', adminRoutes);
 
 app.use((err, req, res, next) => {
   console.error(err);
-  res.status(500).json({ message: 'Internal Server Error' });
+  if (err?.type === 'entity.too.large') {
+    return res.status(413).json({ message: 'Payload quá lớn.' });
+  }
+  if (err?.name === 'ValidationError') {
+    const firstMessage = Object.values(err.errors || {})[0]?.message;
+    return res.status(400).json({ message: firstMessage || 'Dữ liệu không hợp lệ.' });
+  }
+  if (err?.name === 'CastError') {
+    return res.status(400).json({ message: 'Dữ liệu đầu vào không hợp lệ.' });
+  }
+  if (err?.code === 11000) {
+    return res.status(409).json({ message: 'Dữ liệu đã tồn tại.' });
+  }
+  return res.status(500).json({ message: 'Internal Server Error' });
 });
 
 const PORT = process.env.PORT || 5000;

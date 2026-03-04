@@ -516,6 +516,69 @@ body {
   color: #875465;
 }
 
+.top-liked-sticky {
+  position: fixed;
+  left: 18px;
+  bottom: 18px;
+  z-index: 48;
+  pointer-events: none;
+}
+
+.top-liked-sticky-inner {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  max-width: min(320px, calc(100vw - 120px));
+  border: 1px solid #efcfd9;
+  border-radius: 999px;
+  padding: 8px 12px 8px 8px;
+  background: rgba(255, 248, 252, 0.92);
+  box-shadow: 0 10px 22px rgba(130, 40, 76, 0.2);
+  backdrop-filter: blur(4px);
+}
+
+.top-liked-sticky-avatar {
+  width: 34px;
+  height: 34px;
+  border-radius: 999px;
+  object-fit: cover;
+  border: 1px solid #e7c9d4;
+  background: #fff;
+  flex: 0 0 34px;
+}
+
+.top-liked-sticky-avatar.fallback {
+  display: grid;
+  place-items: center;
+  color: #fff;
+  font-weight: 700;
+  font-size: 0.72rem;
+  background: linear-gradient(130deg, #d14f79, #a63a66);
+}
+
+.top-liked-sticky-info {
+  min-width: 0;
+}
+
+.top-liked-sticky-title {
+  margin: 0;
+  font-size: 0.69rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #9a5c70;
+  font-weight: 700;
+}
+
+.top-liked-sticky-text {
+  margin: 2px 0 0;
+  color: #6f3d4e;
+  font-weight: 700;
+  line-height: 1.15;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
 .wish-banner {
   margin-top: 14px;
   border-radius: 14px;
@@ -1446,6 +1509,17 @@ body {
   .chat-widget-root {
     right: 12px;
     bottom: 12px;
+  }
+
+  .top-liked-sticky {
+    left: 10px;
+    bottom: 82px;
+    right: 10px;
+  }
+
+  .top-liked-sticky-inner {
+    max-width: 100%;
+    border-radius: 14px;
   }
 
   .chat-panel {

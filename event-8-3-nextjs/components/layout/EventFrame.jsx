@@ -85,6 +85,29 @@ export default function EventFrame({
         )}
       </article>
 
+      {topLikedWish && (
+        <aside className="top-liked-sticky" aria-live="polite">
+          <div className="top-liked-sticky-inner">
+            {topLikedAvatar ? (
+              <img
+                src={topLikedAvatar}
+                alt={topLikedName}
+                className="top-liked-sticky-avatar"
+                referrerPolicy="no-referrer"
+              />
+            ) : (
+              <div className="top-liked-sticky-avatar fallback">{getInitials(topLikedName)}</div>
+            )}
+            <div className="top-liked-sticky-info">
+              <p className="top-liked-sticky-title">Top tim hiện tại</p>
+              <p className="top-liked-sticky-text">
+                {topLikedName} • <strong>{topLikedCount}</strong> ❤️
+              </p>
+            </div>
+          </div>
+        </aside>
+      )}
+
       <AuthSection
         user={user}
         authLoading={authLoading}

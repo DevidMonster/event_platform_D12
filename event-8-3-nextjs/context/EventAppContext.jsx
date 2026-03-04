@@ -166,8 +166,9 @@ export function EventAppProvider({ children }) {
         })
       });
 
-      if (!res.ok) throw new Error('Gửi lời chúc thất bại');
-      const createdWish = await res.json();
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.message || 'Gửi lời chúc thất bại');
+      const createdWish = json;
 
       setContent('');
       setData((prev) => {
