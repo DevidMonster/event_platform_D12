@@ -4,19 +4,23 @@ export default function HomeTab() {
   return (
     <section className="panel fade-in">
       <article className="home-card">
-        <h2>✨ Lời chào mừng</h2>
+        <h2>✨ Thông điệp 8/3 dành cho D12</h2>
         <p>
-          Chào mừng toàn thể anh chị em đến với không gian 8/3. Hãy gửi một lời chúc chân thành,
-          đọc các thông điệp đẹp và cùng nhau tạo nên một ngày thật vui.
+          Nhân dịp Quốc tế Phụ nữ 8/3, D12 tổ chức chương trình tôn vinh các chị/em trong đơn vị với mong muốn lan
+          tỏa sự trân trọng, yêu thương và gắn kết.
         </p>
         <p>
-          Điểm nhấn năm nay là khu “Lá thư 8/3” với phong cách trang nhã để mọi lời chúc đều được hiển
-          thị đẹp mắt. Bạn có thể vào tab <strong>Gửi lời chúc</strong> để tham gia ngay.
+          Đối tượng tham gia là toàn bộ thành viên D12. Mỗi người hãy viết một lời chúc ý nghĩa và dành tim cho lời
+          chúc mà mình cảm thấy hay nhất.
+        </p>
+        <p>
+          Giải thưởng sẽ được trao cho người nhận được nhiều lượt thả tim nhất. Hãy tham gia thật nhiệt tình để cùng
+          nhau tạo nên một mùa 8/3 ấm áp và đáng nhớ.
         </p>
       </article>
 
       <div className="wish-banner">
-        <p>🌸 Chúc mừng Quốc tế Phụ nữ 8/3 - Tỏa sáng theo cách của bạn 🌸</p>
+        <p>🌸 Chúc mừng Quốc tế Phụ nữ 8/3 - Tỏa sáng theo cách của bạn! 🌸</p>
       </div>
 
       <div className="grand-wish-grid">
