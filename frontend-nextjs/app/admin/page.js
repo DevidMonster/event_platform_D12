@@ -5,6 +5,9 @@ import { useEffect, useMemo, useState } from 'react';
 export default function AdminPage() {
   const [adminKey, setAdminKey] = useState('');
   const [events, setEvents] = useState([]);
+  const [wishIdLookup, setWishIdLookup] = useState('');
+  const [wishVoters, setWishVoters] = useState(null);
+  const [voterLoading, setVoterLoading] = useState(false);
   const [name, setName] = useState('Sự kiện mới');
   const [slug, setSlug] = useState('su-kien-moi');
   const [publicUrl, setPublicUrl] = useState('http://localhost:3001');
@@ -71,6 +74,33 @@ export default function AdminPage() {
     setMessage('Đã chuyển sự kiện active');
     await loadEvents();
   }
+  async function lookupWishVoters(e) {
+    e.preventDefault();
+    setMessage('');
+    setWishVoters(null);
+
+    const wishId = wishIdLookup.trim();
+    if (!wishId) {
+      setMessage('Vui long nhap wishId can tra cuu');
+      return;
+    }
+
+    setVoterLoading(true);
+    try {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/admin/wishes/${wishId}/voters`, {
+        headers
+      });
+      const json = await res.json();
+      if (!res.ok) {
+        setMessage(json.message || 'Khong tai duoc danh sach email vote');
+        return;
+      }
+
+      setWishVoters(json);
+    } finally {
+      setVoterLoading(false);
+    }
+  }
 
   return (
     <main className="container">
@@ -116,6 +146,44 @@ export default function AdminPage() {
           </div>
         ))}
       </section>
+      <section className="card">
+        <h2>Tra cuu email da vote theo wishId</h2>
+        <form onSubmit={lookupWishVoters}>
+          <input
+            value={wishIdLookup}
+            onChange={(e) => setWishIdLookup(e.target.value)}
+            placeholder="Nhap wishId"
+          />
+          <button disabled={voterLoading || !adminKey}>
+            {voterLoading ? 'Dang tai...' : 'Tra cuu'}
+          </button>
+        </form>
+
+        {wishVoters && (
+          <div>
+            <p>
+              Bai viet: <strong>{wishVoters.authorName}</strong>
+            </p>
+            <p>
+              Tong tim: <strong>{wishVoters.likesCount}</strong>
+            </p>
+            <p>
+              Tim khong quy doi duoc email: <strong>{wishVoters.unresolvedVotes}</strong>
+            </p>
+            <p>Email da vote:</p>
+            {Array.isArray(wishVoters.voterEmails) && wishVoters.voterEmails.length > 0 ? (
+              <ul>
+                {wishVoters.voterEmails.map((email) => (
+                  <li key={email}>{email}</li>
+                ))}
+              </ul>
+            ) : (
+              <p>Chua co email nao.</p>
+            )}
+          </div>
+        )}
+      </section>
     </main>
   );
 }
+

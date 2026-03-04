@@ -1,5 +1,7 @@
 const express = require('express');
+const mongoose = require('mongoose');
 const Event = require('../models/Event');
+const Wish = require('../models/Wish');
 
 const router = express.Router();
 
@@ -48,6 +50,52 @@ router.patch('/events/:id/active', async (req, res) => {
   await target.save();
 
   res.json({ message: 'Active event updated', event: target });
+});
+
+router.get('/wishes/:wishId/voters', async (req, res) => {
+  const wishId = String(req.params.wishId || '').trim();
+  if (!mongoose.Types.ObjectId.isValid(wishId)) {
+    return res.status(400).json({ message: 'Invalid wish id' });
+  }
+
+  const wish = await Wish.findById(wishId)
+    .select({
+      _id: 1,
+      authorName: 1,
+      likesCount: 1,
+      likeUserKeys: 1,
+      likeUserEmails: 1,
+      createdAt: 1
+    })
+    .lean();
+
+  if (!wish) {
+    return res.status(404).json({ message: 'Wish not found' });
+  }
+
+  const fromEmailField = Array.isArray(wish.likeUserEmails) ? wish.likeUserEmails : [];
+  const fromKeys = Array.isArray(wish.likeUserKeys)
+    ? wish.likeUserKeys.filter((item) => String(item || '').includes('@'))
+    : [];
+
+  const voterEmails = Array.from(
+    new Set(
+      [...fromEmailField, ...fromKeys]
+        .map((item) => String(item || '').trim().toLowerCase())
+        .filter(Boolean)
+    )
+  ).sort();
+
+  const likesCount = Math.max(0, Number(wish.likesCount || 0));
+  const unresolvedVotes = Math.max(0, likesCount - voterEmails.length);
+
+  return res.json({
+    wishId: String(wish._id),
+    authorName: wish.authorName || 'Guest',
+    likesCount,
+    voterEmails,
+    unresolvedVotes
+  });
 });
 
 module.exports = router;

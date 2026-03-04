@@ -30,6 +30,22 @@ function extractUserIdentity(payload = {}) {
   return { userUid, userEmail, userKey, authorName };
 }
 
+function toPublicWish(raw = {}) {
+  return {
+    _id: raw._id,
+    eventId: raw.eventId,
+    userUid: raw.userUid || null,
+    avatarUrl: raw.avatarUrl || null,
+    authorName: raw.authorName || 'Guest',
+    content: raw.content || '',
+    likeUserKeys: Array.isArray(raw.likeUserKeys) ? raw.likeUserKeys : [],
+    likesCount: Math.max(0, Number(raw.likesCount || 0)),
+    isApproved: Boolean(raw.isApproved),
+    createdAt: raw.createdAt || null,
+    updatedAt: raw.updatedAt || null
+  };
+}
+
 function toEffectiveWeight(item) {
   const quantity = Math.max(0, Number(item.quantity || 0));
   const weight = Math.max(0.01, Number(item.weight || 1));
@@ -162,7 +178,7 @@ router.get(
     .sort({ createdAt: -1 })
     .lean();
 
-  return res.json({ event, wishes });
+  return res.json({ event, wishes: wishes.map((wish) => toPublicWish(wish)) });
   })
 );
 
@@ -204,25 +220,13 @@ router.post(
     isApproved: true
   });
 
+  const publicWish = toPublicWish(wish.toObject());
   const io = req.app?.locals?.io;
   if (io) {
-    io.to(`event:${eventSlug}`).emit('wish_created', {
-      _id: wish._id,
-      eventId: wish.eventId,
-      userUid: wish.userUid,
-      userEmail: wish.userEmail,
-      avatarUrl: wish.avatarUrl,
-      authorName: wish.authorName,
-      content: wish.content,
-      likeUserKeys: wish.likeUserKeys || [],
-      likesCount: wish.likesCount || 0,
-      isApproved: wish.isApproved,
-      createdAt: wish.createdAt,
-      updatedAt: wish.updatedAt
-    });
+    io.to(`event:${eventSlug}`).emit('wish_created', publicWish);
   }
 
-  return res.status(201).json(wish);
+  return res.status(201).json(publicWish);
   })
 );
 
@@ -255,6 +259,7 @@ router.post(
   asyncHandler(async (req, res) => {
   const { wishId } = req.params;
   const { userUid, userEmail } = req.body;
+  const normalizedUserEmail = String(userEmail || '').trim().toLowerCase();
 
   if (!mongoose.Types.ObjectId.isValid(wishId)) {
     return res.status(400).json({ message: 'Invalid wish id' });
@@ -275,9 +280,17 @@ router.post(
     return res.status(403).json({ message: 'This event is not public right now' });
   }
 
+  const unlikeUpdate = {
+    $pull: { likeUserKeys: userKey },
+    $inc: { likesCount: -1 }
+  };
+  if (normalizedUserEmail) {
+    unlikeUpdate.$pull.likeUserEmails = normalizedUserEmail;
+  }
+
   const unliked = await Wish.findOneAndUpdate(
     { _id: wishId, likeUserKeys: userKey },
-    { $pull: { likeUserKeys: userKey }, $inc: { likesCount: -1 } },
+    unlikeUpdate,
     { new: true }
   ).lean();
 
@@ -302,9 +315,17 @@ router.post(
     });
   }
 
+  const likeUpdate = {
+    $addToSet: { likeUserKeys: userKey },
+    $inc: { likesCount: 1 }
+  };
+  if (normalizedUserEmail) {
+    likeUpdate.$addToSet.likeUserEmails = normalizedUserEmail;
+  }
+
   const liked = await Wish.findOneAndUpdate(
     { _id: wishId, likeUserKeys: { $ne: userKey } },
-    { $addToSet: { likeUserKeys: userKey }, $inc: { likesCount: 1 } },
+    likeUpdate,
     { new: true }
   ).lean();
 
