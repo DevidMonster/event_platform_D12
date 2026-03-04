@@ -7,7 +7,8 @@
     "dev": "nodemon src/server.js",
     "start": "node src/server.js",
     "seed:wheel": "node src/scripts/add-wheel-rewards.js",
-    "cleanup:game": "node src/scripts/cleanup-game-data.js"
+    "cleanup:game": "node src/scripts/cleanup-game-data.js",
+    "backfill:like-profiles": "node src/scripts/backfill-like-user-profiles.js"
   },
   "dependencies": {
     "cors": "^2.8.5",

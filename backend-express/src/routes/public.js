@@ -30,6 +30,38 @@ function extractUserIdentity(payload = {}) {
   return { userUid, userEmail, userKey, authorName };
 }
 
+function normalizeLikeProfiles(list = []) {
+  if (!Array.isArray(list)) return [];
+
+  const seen = new Set();
+  const result = [];
+  list.forEach((item) => {
+    const userEmail = String(item?.userEmail || '').trim().toLowerCase();
+    const userKey = String(item?.userKey || '').trim().toLowerCase();
+    const userName = String(item?.userName || '').trim() || 'Guest';
+    const dedupeKey = userEmail || userKey;
+    if (!dedupeKey || seen.has(dedupeKey)) return;
+    seen.add(dedupeKey);
+    result.push({
+      userEmail: userEmail || null,
+      userName
+    });
+  });
+
+  return result;
+}
+
+function buildLikeProfile({ userKey, userEmail, userName }) {
+  const normalizedUserKey = String(userKey || '').trim().toLowerCase();
+  const normalizedUserEmail = String(userEmail || '').trim().toLowerCase();
+  const normalizedUserName = String(userName || '').trim() || 'Guest';
+  return {
+    userKey: normalizedUserKey || null,
+    userEmail: normalizedUserEmail || null,
+    userName: normalizedUserName
+  };
+}
+
 function toPublicWish(raw = {}) {
   return {
     _id: raw._id,
@@ -39,6 +71,7 @@ function toPublicWish(raw = {}) {
     authorName: raw.authorName || 'Guest',
     content: raw.content || '',
     likeUserKeys: Array.isArray(raw.likeUserKeys) ? raw.likeUserKeys : [],
+    likeUserProfiles: normalizeLikeProfiles(raw.likeUserProfiles),
     likesCount: Math.max(0, Number(raw.likesCount || 0)),
     isApproved: Boolean(raw.isApproved),
     createdAt: raw.createdAt || null,
@@ -258,9 +291,10 @@ router.post(
   '/wishes/:wishId/like',
   asyncHandler(async (req, res) => {
   const { wishId } = req.params;
-  const { userUid, userEmail } = req.body;
+  const { userUid, userEmail, authorName } = req.body;
   const normalizedUserUid = String(userUid || '').trim().toLowerCase();
   const normalizedUserEmail = String(userEmail || '').trim().toLowerCase();
+  const normalizedAuthorName = String(authorName || '').trim();
 
   if (!mongoose.Types.ObjectId.isValid(wishId)) {
     return res.status(400).json({ message: 'Invalid wish id' });
@@ -286,7 +320,10 @@ router.post(
   }
 
   const unlikeUpdate = {
-    $pull: { likeUserKeys: { $in: candidateKeys } },
+    $pull: {
+      likeUserKeys: { $in: candidateKeys },
+      likeUserProfiles: { userKey: { $in: candidateKeys } }
+    },
     $inc: { likesCount: -1 }
   };
   if (normalizedUserEmail) {
@@ -303,23 +340,33 @@ router.post(
     const currentLikesCount = Math.max(0, Number(unliked.likesCount || 0));
     const keysCount = Array.isArray(unliked.likeUserKeys) ? unliked.likeUserKeys.length : 0;
     const safeLikesCount = Math.min(currentLikesCount, keysCount);
+    let safeWish = unliked;
 
     if (safeLikesCount !== currentLikesCount) {
       await Wish.updateOne({ _id: wishId }, { $set: { likesCount: safeLikesCount } });
+      const latestWish = await Wish.findById(wishId).lean();
+      if (latestWish) safeWish = latestWish;
+    } else {
+      safeWish.likesCount = safeLikesCount;
     }
 
+    const publicWish = toPublicWish(safeWish);
     const io = req.app?.locals?.io;
     if (io && event?.slug) {
       io.to(`event:${event.slug}`).emit('wish_likes_updated', {
         wishId,
-        likesCount: safeLikesCount
+        likesCount: publicWish.likesCount,
+        likeUserKeys: publicWish.likeUserKeys,
+        likeUserProfiles: publicWish.likeUserProfiles
       });
     }
 
     return res.json({
       wishId,
-      likesCount: safeLikesCount,
-      liked: false
+      likesCount: publicWish.likesCount,
+      liked: false,
+      likeUserKeys: publicWish.likeUserKeys,
+      likeUserProfiles: publicWish.likeUserProfiles
     });
   }
 
@@ -338,43 +385,66 @@ router.post(
   ).lean();
 
   if (!liked) {
-    const currentWish = await Wish.findById(wishId).select({ likesCount: 1 }).lean();
-    const fallbackLikesCount = Math.max(0, Number(currentWish?.likesCount || 0));
+    const currentWish = await Wish.findById(wishId).lean();
+    const publicWish = toPublicWish(currentWish || {});
+    const fallbackLikesCount = publicWish.likesCount;
 
     const io = req.app?.locals?.io;
     if (io && event?.slug) {
       io.to(`event:${event.slug}`).emit('wish_likes_updated', {
         wishId,
-        likesCount: fallbackLikesCount
+        likesCount: fallbackLikesCount,
+        likeUserKeys: publicWish.likeUserKeys,
+        likeUserProfiles: publicWish.likeUserProfiles
       });
     }
 
     return res.json({
       wishId,
       likesCount: fallbackLikesCount,
-      liked: true
+      liked: true,
+      likeUserKeys: publicWish.likeUserKeys,
+      likeUserProfiles: publicWish.likeUserProfiles
     });
   }
 
-  const currentLikesCount = Math.max(0, Number(liked?.likesCount || 0));
-  const keysCount = Array.isArray(liked?.likeUserKeys) ? liked.likeUserKeys.length : 0;
+  const profile = buildLikeProfile({
+    userKey,
+    userEmail: normalizedUserEmail,
+    userName: normalizedAuthorName || normalizedUserEmail || 'Guest'
+  });
+  await Wish.updateOne(
+    { _id: wishId },
+    { $pull: { likeUserProfiles: { userKey: { $in: candidateKeys } } } }
+  );
+  await Wish.updateOne({ _id: wishId }, { $push: { likeUserProfiles: profile } });
+
+  const latestWish = await Wish.findById(wishId).lean();
+  const currentLikesCount = Math.max(0, Number(latestWish?.likesCount || 0));
+  const keysCount = Array.isArray(latestWish?.likeUserKeys) ? latestWish.likeUserKeys.length : 0;
   const safeLikesCount = Math.min(currentLikesCount, keysCount);
-  if (liked && safeLikesCount !== currentLikesCount) {
+  if (safeLikesCount !== currentLikesCount) {
     await Wish.updateOne({ _id: wishId }, { $set: { likesCount: safeLikesCount } });
+    if (latestWish) latestWish.likesCount = safeLikesCount;
   }
 
+  const publicWish = toPublicWish(latestWish || {});
   const io = req.app?.locals?.io;
   if (io && event?.slug) {
     io.to(`event:${event.slug}`).emit('wish_likes_updated', {
       wishId,
-      likesCount: safeLikesCount
+      likesCount: publicWish.likesCount,
+      likeUserKeys: publicWish.likeUserKeys,
+      likeUserProfiles: publicWish.likeUserProfiles
     });
   }
 
   return res.json({
     wishId,
-    likesCount: safeLikesCount,
-    liked: true
+    likesCount: publicWish.likesCount,
+    liked: true,
+    likeUserKeys: publicWish.likeUserKeys,
+    likeUserProfiles: publicWish.likeUserProfiles
   });
   })
 );

@@ -13,6 +13,16 @@ const wishSchema = new mongoose.Schema(
     avatarUrl: { type: String, trim: true, default: null },
     likeUserKeys: { type: [String], default: [] },
     likeUserEmails: { type: [String], default: [] },
+    likeUserProfiles: {
+      type: [
+        {
+          userKey: { type: String, trim: true, default: null },
+          userEmail: { type: String, trim: true, lowercase: true, default: null },
+          userName: { type: String, trim: true, default: 'Guest' }
+        }
+      ],
+      default: []
+    },
     likesCount: { type: Number, default: 0 },
     authorName: { type: String, required: true, trim: true, maxlength: 100 },
     content: { type: String, required: true, trim: true, maxlength: 10000 },

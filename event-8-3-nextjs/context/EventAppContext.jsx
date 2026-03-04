@@ -100,6 +100,8 @@ export function EventAppProvider({ children }) {
       const wishId = String(payload.wishId || '').trim();
       if (!wishId) return;
       const likesCount = Math.max(0, Number(payload.likesCount || 0));
+      const likeUserKeys = Array.isArray(payload.likeUserKeys) ? payload.likeUserKeys : null;
+      const likeUserProfiles = Array.isArray(payload.likeUserProfiles) ? payload.likeUserProfiles : null;
 
       setData((prev) => {
         if (!prev?.wishes) return prev;
@@ -108,7 +110,10 @@ export function EventAppProvider({ children }) {
         const nextWishes = prev.wishes.map((wish) => {
           if (String(wish?._id) !== wishId) return wish;
           changed = true;
-          return { ...wish, likesCount };
+          const nextWish = { ...wish, likesCount };
+          if (likeUserKeys) nextWish.likeUserKeys = likeUserKeys;
+          if (likeUserProfiles) nextWish.likeUserProfiles = likeUserProfiles;
+          return nextWish;
         });
 
         if (!changed) return prev;
@@ -208,7 +213,8 @@ export function EventAppProvider({ children }) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           userUid: user.uid || null,
-          userEmail: user.email || null
+          userEmail: user.email || null,
+          authorName: user.displayName || user.email || 'Guest'
         })
       });
 
@@ -222,20 +228,18 @@ export function EventAppProvider({ children }) {
           wishes: prev.wishes.map((wish) => {
             if (wish._id !== wishId) return wish;
             const currentKeys = Array.isArray(wish.likeUserKeys) ? wish.likeUserKeys : [];
-            const shouldLike = Boolean(json.liked);
-            const hasCurrentUser = currentKeys.includes(currentUserKey);
-            let nextKeys = currentKeys;
-
-            if (shouldLike && !hasCurrentUser) {
-              nextKeys = [...currentKeys, currentUserKey];
-            } else if (!shouldLike && hasCurrentUser) {
-              nextKeys = currentKeys.filter((key) => key !== currentUserKey);
-            }
+            const nextKeys = Array.isArray(json.likeUserKeys) ? json.likeUserKeys : currentKeys;
+            const nextProfiles = Array.isArray(json.likeUserProfiles)
+              ? json.likeUserProfiles
+              : Array.isArray(wish.likeUserProfiles)
+                ? wish.likeUserProfiles
+                : [];
 
             return {
               ...wish,
               likesCount: json.likesCount ?? wish.likesCount ?? 0,
-              likeUserKeys: nextKeys
+              likeUserKeys: nextKeys,
+              likeUserProfiles: nextProfiles
             };
           })
         };

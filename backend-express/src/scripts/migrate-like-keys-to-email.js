@@ -30,6 +30,16 @@ function uniqueStable(values) {
   return result;
 }
 
+function normalizeName(value) {
+  return String(value || '').trim();
+}
+
+function fallbackNameFromEmail(email) {
+  const normalizedEmail = normalize(email);
+  if (!normalizedEmail || !normalizedEmail.includes('@')) return 'Guest';
+  return normalizedEmail.split('@')[0] || 'Guest';
+}
+
 async function collectUidEmailMap(map, Model, label) {
   let scanned = 0;
   let added = 0;
@@ -56,6 +66,32 @@ async function collectUidEmailMap(map, Model, label) {
   }
 
   console.log(`[map:${label}] scanned=${scanned}, added=${added}`);
+}
+
+async function collectEmailNameMap(map, Model, label) {
+  let scanned = 0;
+  let added = 0;
+
+  const cursor = Model.find({
+    userEmail: { $exists: true, $ne: null },
+    authorName: { $exists: true, $ne: null }
+  })
+    .select({ _id: 0, userEmail: 1, authorName: 1 })
+    .lean()
+    .cursor();
+
+  for await (const doc of cursor) {
+    scanned += 1;
+    const email = normalize(doc.userEmail);
+    const authorName = normalizeName(doc.authorName);
+    if (!email || !isEmail(email) || !authorName) continue;
+    if (!map.has(email)) {
+      map.set(email, authorName);
+      added += 1;
+    }
+  }
+
+  console.log(`[name-map:${label}] scanned=${scanned}, added=${added}`);
 }
 
 async function resolveWishFilterByEventSlug(eventSlug) {
@@ -85,9 +121,13 @@ async function migrateLikeKeysToEmail() {
   await connectDB();
 
   const uidToEmail = new Map();
+  const emailToName = new Map();
   await collectUidEmailMap(uidToEmail, Wish, 'wish');
   await collectUidEmailMap(uidToEmail, ChatMessage, 'chat');
   await collectUidEmailMap(uidToEmail, GameAttempt, 'game_attempt');
+  await collectEmailNameMap(emailToName, Wish, 'wish');
+  await collectEmailNameMap(emailToName, ChatMessage, 'chat');
+  await collectEmailNameMap(emailToName, GameAttempt, 'game_attempt');
 
   console.log(`UID->email map size: ${uidToEmail.size}`);
 
@@ -108,7 +148,7 @@ async function migrateLikeKeysToEmail() {
   const bulkOps = [];
 
   const cursor = Wish.find(query)
-    .select({ _id: 1, likeUserKeys: 1, likeUserEmails: 1, likesCount: 1 })
+    .select({ _id: 1, likeUserKeys: 1, likeUserEmails: 1, likeUserProfiles: 1, likesCount: 1 })
     .lean()
     .cursor();
 
@@ -146,11 +186,26 @@ async function migrateLikeKeysToEmail() {
       ...currentEmails,
       ...nextKeys.filter((key) => isEmail(key))
     ]).sort();
+    const currentProfiles = Array.isArray(wish.likeUserProfiles) ? wish.likeUserProfiles : [];
+    const existingByEmail = new Map();
+    currentProfiles.forEach((profile) => {
+      const email = normalize(profile?.userEmail);
+      const name = normalizeName(profile?.userName);
+      if (!email || !isEmail(email)) return;
+      if (existingByEmail.has(email)) return;
+      existingByEmail.set(email, name || fallbackNameFromEmail(email));
+    });
+    const nextProfiles = nextEmails.map((email) => ({
+      userKey: email,
+      userEmail: email,
+      userName: existingByEmail.get(email) || emailToName.get(email) || fallbackNameFromEmail(email)
+    }));
     const nextLikesCount = nextKeys.length;
 
     const changed =
       !arraysEqual(currentKeys, nextKeys) ||
       !arraysEqual([...currentEmails].sort(), nextEmails) ||
+      JSON.stringify(currentProfiles) !== JSON.stringify(nextProfiles) ||
       Number(wish.likesCount || 0) !== nextLikesCount;
 
     stats.convertedKeys += convertedInWish;
@@ -168,6 +223,7 @@ async function migrateLikeKeysToEmail() {
           $set: {
             likeUserKeys: nextKeys,
             likeUserEmails: nextEmails,
+            likeUserProfiles: nextProfiles,
             likesCount: nextLikesCount
           }
         }

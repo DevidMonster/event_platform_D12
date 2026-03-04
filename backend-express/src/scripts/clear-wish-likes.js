@@ -36,7 +36,8 @@ async function clearWishLikes() {
     $or: [
       { likesCount: { $gt: 0 } },
       { likeUserKeys: { $exists: true, $ne: [] } },
-      { likeUserEmails: { $exists: true, $ne: [] } }
+      { likeUserEmails: { $exists: true, $ne: [] } },
+      { likeUserProfiles: { $exists: true, $ne: [] } }
     ]
   };
 
@@ -62,7 +63,8 @@ async function clearWishLikes() {
     $set: {
       likesCount: 0,
       likeUserKeys: [],
-      likeUserEmails: []
+      likeUserEmails: [],
+      likeUserProfiles: []
     }
   });
 

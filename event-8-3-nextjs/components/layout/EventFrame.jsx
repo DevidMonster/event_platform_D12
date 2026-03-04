@@ -13,7 +13,7 @@ function getInitials(name = '') {
 function pickTopLikedWish(wishes = []) {
   if (!Array.isArray(wishes) || !wishes.length) return null;
 
-  return wishes.reduce((best, current) => {
+  const topWish = wishes.reduce((best, current) => {
     if (!best) return current;
 
     const bestLikes = Number(best.likesCount || 0);
@@ -25,6 +25,10 @@ function pickTopLikedWish(wishes = []) {
     const currentTime = new Date(current.createdAt || 0).getTime() || 0;
     return currentTime > bestTime ? current : best;
   }, null);
+
+  const topLikes = Math.max(0, Number(topWish?.likesCount || 0));
+  if (topLikes <= 0) return null;
+  return topWish;
 }
 
 export default function EventFrame({
@@ -67,7 +71,7 @@ export default function EventFrame({
       <article className="home-card top-liked-wrap">
         <h3>🏆 Bài viết được yêu thích nhất hiện tại</h3>
         {!topLikedWish ? (
-          <p>Chưa có lời nhắn nào. Hãy tham gia gửi lời chúc để bắt đầu bảng xếp hạng!</p>
+          <p>Chưa có lời chúc được yêu thích nhất.</p>
         ) : (
           <div className="top-liked-card">
             {topLikedAvatar ? (
@@ -122,3 +126,4 @@ export default function EventFrame({
     </main>
   );
 }
+
