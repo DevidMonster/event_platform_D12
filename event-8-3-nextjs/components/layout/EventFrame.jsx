@@ -10,25 +10,44 @@ function getInitials(name = '') {
   return `${parts[0].slice(0, 1)}${parts[parts.length - 1].slice(0, 1)}`.toUpperCase();
 }
 
-function pickTopLikedWish(wishes = []) {
-  if (!Array.isArray(wishes) || !wishes.length) return null;
+function toSafeLikeCount(item) {
+  return Math.max(0, Number(item?.likesCount || 0));
+}
 
-  const topWish = wishes.reduce((best, current) => {
-    if (!best) return current;
+function toPriorityTime(item) {
+  const updated = new Date(item?.updatedAt || 0).getTime() || 0;
+  const created = new Date(item?.createdAt || 0).getTime() || 0;
+  return Math.max(updated, created);
+}
 
-    const bestLikes = Number(best.likesCount || 0);
-    const currentLikes = Number(current.likesCount || 0);
-    if (currentLikes > bestLikes) return current;
-    if (currentLikes < bestLikes) return best;
+function sortByTopTieRule(a, b) {
+  const likesA = toSafeLikeCount(a);
+  const likesB = toSafeLikeCount(b);
+  if (likesB !== likesA) return likesB - likesA;
+  return toPriorityTime(b) - toPriorityTime(a);
+}
 
-    const bestTime = new Date(best.createdAt || 0).getTime() || 0;
-    const currentTime = new Date(current.createdAt || 0).getTime() || 0;
-    return currentTime > bestTime ? current : best;
-  }, null);
+function getTopLikedSummary(wishes = []) {
+  if (!Array.isArray(wishes) || wishes.length === 0) {
+    return { leader: null, tiedOthers: [], topLikes: 0, totalTied: 0 };
+  }
 
-  const topLikes = Math.max(0, Number(topWish?.likesCount || 0));
-  if (topLikes <= 0) return null;
-  return topWish;
+  const positiveWishes = wishes.filter((item) => toSafeLikeCount(item) > 0);
+  if (positiveWishes.length === 0) {
+    return { leader: null, tiedOthers: [], topLikes: 0, totalTied: 0 };
+  }
+
+  const ranked = [...positiveWishes].sort(sortByTopTieRule);
+  const topLikes = toSafeLikeCount(ranked[0]);
+  const tiedGroup = ranked.filter((item) => toSafeLikeCount(item) === topLikes);
+  const [leader, ...tiedOthers] = tiedGroup;
+
+  return {
+    leader: leader || null,
+    tiedOthers,
+    topLikes,
+    totalTied: tiedGroup.length
+  };
 }
 
 export default function EventFrame({
@@ -45,10 +64,11 @@ export default function EventFrame({
   onLogout,
   children
 }) {
-  const topLikedWish = pickTopLikedWish(wishes);
+  const { leader: topLikedWish, tiedOthers, topLikes, totalTied } = getTopLikedSummary(wishes);
+
   const topLikedName = String(topLikedWish?.authorName || 'Ẩn danh').trim() || 'Ẩn danh';
   const topLikedAvatar = String(topLikedWish?.avatarUrl || '').trim();
-  const topLikedCount = Math.max(0, Number(topLikedWish?.likesCount || 0));
+  const hasTie = totalTied > 1;
 
   return (
     <main className="event-shell">
@@ -73,19 +93,53 @@ export default function EventFrame({
         {!topLikedWish ? (
           <p>Chưa có lời chúc được yêu thích nhất.</p>
         ) : (
-          <div className="top-liked-card">
-            {topLikedAvatar ? (
-              <img src={topLikedAvatar} alt={topLikedName} className="top-liked-avatar" referrerPolicy="no-referrer" />
-            ) : (
-              <div className="top-liked-avatar fallback">{getInitials(topLikedName)}</div>
-            )}
-            <div className="top-liked-info">
-              <p className="top-liked-name">{topLikedName}</p>
-              <p className="top-liked-meta">
-                Bài viết đang có <strong>{topLikedCount}</strong> lượt tim.
-              </p>
+          <>
+            <div className="top-liked-card">
+              {topLikedAvatar ? (
+                <img src={topLikedAvatar} alt={topLikedName} className="top-liked-avatar" referrerPolicy="no-referrer" />
+              ) : (
+                <div className="top-liked-avatar fallback">{getInitials(topLikedName)}</div>
+              )}
+              <div className="top-liked-info">
+                <p className="top-liked-name">{topLikedName}</p>
+                <p className="top-liked-meta">
+                  Bài viết đang có <strong>{topLikes}</strong> lượt tim.
+                </p>
+                {hasTie && (
+                  <p className="top-liked-tie-meta">
+                    Có <strong>{totalTied}</strong> người đang đồng hạng {topLikes} lượt tim.
+                  </p>
+                )}
+              </div>
             </div>
-          </div>
+
+            {hasTie && tiedOthers.length > 0 && (
+              <details className="top-liked-tie-box">
+                <summary className="top-liked-tie-summary">Xem thêm người đồng hạng</summary>
+                <div className="top-liked-tie-list">
+                  {tiedOthers.map((item) => {
+                    const name = String(item?.authorName || 'Ẩn danh').trim() || 'Ẩn danh';
+                    const avatar = String(item?.avatarUrl || '').trim();
+                    const key = String(item?._id || `${name}-${toPriorityTime(item)}`);
+
+                    return (
+                      <div className="top-liked-tie-row" key={key}>
+                        {avatar ? (
+                          <img src={avatar} alt={name} className="top-liked-tie-avatar" referrerPolicy="no-referrer" />
+                        ) : (
+                          <div className="top-liked-tie-avatar fallback">{getInitials(name)}</div>
+                        )}
+                        <div className="top-liked-tie-info">
+                          <p>{name}</p>
+                          <span>{topLikes} lượt tim</span>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </details>
+            )}
+          </>
         )}
       </article>
 
@@ -105,7 +159,7 @@ export default function EventFrame({
             <div className="top-liked-sticky-info">
               <p className="top-liked-sticky-title">Top tim hiện tại</p>
               <p className="top-liked-sticky-text">
-                {topLikedName} • <strong>{topLikedCount}</strong> ❤️
+                {topLikedName} • <strong>{topLikes}</strong> ❤️
               </p>
             </div>
           </div>
@@ -126,4 +180,3 @@ export default function EventFrame({
     </main>
   );
 }
-

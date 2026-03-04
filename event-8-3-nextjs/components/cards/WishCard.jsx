@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useState } from 'react';
 import { getInitials, getLetterSizeClass, hashCode } from '../../lib/event-helpers';
 
 function WishAvatar({ authorName, avatarUrl }) {
@@ -20,34 +20,7 @@ function WishAvatar({ authorName, avatarUrl }) {
   return <div className="wish-avatar-fallback">{getInitials(authorName)}</div>;
 }
 
-function buildLikerList(wish) {
-  const profileList = Array.isArray(wish?.likeUserProfiles) ? wish.likeUserProfiles : [];
-  if (profileList.length > 0) {
-    const seen = new Set();
-    return profileList
-      .map((item) => ({
-        userEmail: String(item?.userEmail || '')
-          .trim()
-          .toLowerCase(),
-        userName: String(item?.userName || '').trim() || 'Guest'
-      }))
-      .filter((item) => item.userEmail)
-      .filter((item) => {
-        if (seen.has(item.userEmail)) return false;
-        seen.add(item.userEmail);
-        return true;
-      });
-  }
-
-  const keys = Array.isArray(wish?.likeUserKeys) ? wish.likeUserKeys : [];
-  return keys
-    .map((key) => String(key || '').trim().toLowerCase())
-    .filter((key) => key.includes('@'))
-    .map((email) => ({ userEmail: email, userName: 'Guest' }));
-}
-
 export default function WishCard({ wish, index, liked, likeBusy, user, onLike }) {
-  const [showLikers, setShowLikers] = useState(false);
   const code = hashCode(`${wish._id}-${index}`);
   const styleOptions = ['rose', 'cream', 'sky', 'mint', 'gold', 'lavender'];
   const style = styleOptions[code % styleOptions.length];
@@ -55,7 +28,6 @@ export default function WishCard({ wish, index, liked, likeBusy, user, onLike })
   const sizeClass = getLetterSizeClass(wish.content, code);
   const sentAt = wish.createdAt ? new Date(wish.createdAt).toLocaleDateString('vi-VN') : '';
   const likesCount = wish.likesCount || 0;
-  const likerList = useMemo(() => buildLikerList(wish), [wish]);
 
   return (
     <article className={`letter letter-${style} ${tilt} ${sizeClass}`}>
@@ -80,36 +52,7 @@ export default function WishCard({ wish, index, liked, likeBusy, user, onLike })
           <span>{liked ? '❤️' : '🤍'}</span>
           <span>{likesCount}</span>
         </button>
-
-        <button
-          type="button"
-          className={`like-list-toggle ${showLikers ? 'active' : ''}`}
-          onClick={() => setShowLikers((prev) => !prev)}
-          title="Xem người đã thả tim"
-          aria-expanded={showLikers}
-        >
-          <span>Đã tim</span>
-          <span className="like-list-caret">{showLikers ? '▲' : '▼'}</span>
-        </button>
       </div>
-
-      {showLikers && (
-        <div className="like-list-popover">
-          <p className="like-list-title">Đã tim ({likesCount})</p>
-          {likerList.length === 0 ? (
-            <p className="like-list-empty">Chưa có lượt tim.</p>
-          ) : (
-            <div className="like-list-items">
-              {likerList.map((liker) => (
-                <p key={`${wish._id}-${liker.userEmail}`} className="like-list-row">
-                  <strong>{liker.userName}</strong>
-                  <span>{liker.userEmail}</span>
-                </p>
-              ))}
-            </div>
-          )}
-        </div>
-      )}
 
       <div className="letter-stamp">8/3</div>
     </article>
