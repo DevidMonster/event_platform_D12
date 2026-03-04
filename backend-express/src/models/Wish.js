@@ -14,7 +14,7 @@ const wishSchema = new mongoose.Schema(
     likeUserKeys: { type: [String], default: [] },
     likesCount: { type: Number, default: 0 },
     authorName: { type: String, required: true, trim: true, maxlength: 100 },
-    content: { type: String, required: true, trim: true, maxlength: 500 },
+    content: { type: String, required: true, trim: true, maxlength: 10000 },
     isApproved: { type: Boolean, default: true }
   },
   { timestamps: true }
