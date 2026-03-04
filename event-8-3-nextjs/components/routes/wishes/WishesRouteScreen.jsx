@@ -16,6 +16,10 @@ export default function WishesRouteScreen() {
     submitWish,
     likeWish
   } = useEventApp();
+  const canViewLikerList =
+    String(user?.email || '')
+      .trim()
+      .toLowerCase() === 'nguyenquangdang310803@gmail.com';
 
   return (
     <WishesTab
@@ -26,6 +30,7 @@ export default function WishesRouteScreen() {
       wishes={wishes}
       likeLoadingIds={likeLoadingIds}
       isWishLikedByCurrentUser={isWishLikedByCurrentUser}
+      canViewLikerList={canViewLikerList}
       onContentChange={setContent}
       onSubmitWish={submitWish}
       onLikeWish={likeWish}

@@ -8,6 +8,7 @@ export default function WishesTab({
   wishes,
   likeLoadingIds,
   isWishLikedByCurrentUser,
+  canViewLikerList,
   onContentChange,
   onSubmitWish,
   onLikeWish
@@ -45,6 +46,7 @@ export default function WishesTab({
               liked={isWishLikedByCurrentUser(wish)}
               likeBusy={likeLoadingIds.includes(wish._id)}
               user={user}
+              canViewLikerList={canViewLikerList}
               onLike={onLikeWish}
             />
           ))}
