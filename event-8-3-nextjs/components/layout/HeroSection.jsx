@@ -2,8 +2,8 @@ import Image from 'next/image';
 import Link from 'next/link';
 
 const tabs = [
-  { key: 'wishes', label: '💌 Gửi lời nhắn', href: '/' },
-  { key: 'home', label: '🏠 Sự kiện', href: '/wishes' }
+  { key: 'home', label: '🏠 Trang chủ', href: '/' },
+  { key: 'wishes', label: '💌 Gửi lời nhắn', href: '/wishes' }
 ];
 
 export default function HeroSection({ event, tab }) {
@@ -25,7 +25,7 @@ export default function HeroSection({ event, tab }) {
       </div>
 
       <h1>{event.name}</h1>
-      <p>{event.description || 'Khong gian loi nhan va ket noi toan don vi.'}</p>
+      <p>{event.description || 'Không gian lời nhắn và kết nối toàn đơn vị.'}</p>
 
       <nav className="tabs">
         {tabs.map((item) => (
