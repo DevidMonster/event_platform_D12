@@ -8,10 +8,13 @@ const publicRoutes = require('./routes/public');
 const adminRoutes = require('./routes/admin');
 const { seedDefaultEvent } = require('./seed');
 const { setupChatSocket } = require('./socket/chat');
+const { seedGreetingCardTemplates } = require('./services/greeting-card-templates');
 
 const app = express();
 
-const allowedOrigins = (process.env.CORS_ORIGIN || 'http://localhost:3000')
+const allowedOrigins = (
+  process.env.CORS_ORIGIN || 'http://localhost:3000,http://localhost:3001,http://localhost:3101'
+)
   .split(',')
   .map((value) => value.trim())
   .filter(Boolean);
@@ -63,6 +66,7 @@ setupChatSocket(io);
 async function start() {
   await connectDB();
   await seedDefaultEvent();
+  await seedGreetingCardTemplates();
   server.listen(PORT, () => {
     console.log(`Server listening on port ${PORT}`);
   });

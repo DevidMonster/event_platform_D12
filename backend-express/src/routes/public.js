@@ -5,7 +5,12 @@ const Wish = require('../models/Wish');
 const ChatMessage = require('../models/ChatMessage');
 const GameReward = require('../models/GameReward');
 const GameAttempt = require('../models/GameAttempt');
+const GreetingCard = require('../models/GreetingCard');
 const { seedMiniGames } = require('../seed');
+const { generateCardMessage } = require('../services/ai-card-writer');
+const { listGreetingCardTemplates } = require('../services/greeting-card-templates');
+const { buildGreetingCardEmail } = require('../services/greeting-card-mail');
+const { isMailConfigured, sendMail } = require('../services/mailer');
 
 const router = express.Router();
 const MAX_WISH_CONTENT_LENGTH = 10000;
@@ -62,6 +67,118 @@ function buildLikeProfile({ userKey, userEmail, userName }) {
   };
 }
 
+function normalizeDirectoryName(value, email) {
+  const normalizedName = String(value || '').trim();
+  if (normalizedName && normalizedName.toLowerCase() !== 'guest') {
+    return normalizedName;
+  }
+
+  const emailPrefix = String(email || '').split('@')[0].trim();
+  return emailPrefix || 'Người dùng';
+}
+
+function mergeDirectoryProfile(store, payload = {}) {
+  const email = String(payload.userEmail || '')
+    .trim()
+    .toLowerCase();
+  if (!email) return;
+
+  const incomingDate = payload.lastSeenAt ? new Date(payload.lastSeenAt) : null;
+  const existing = store.get(email);
+  const nextName = normalizeDirectoryName(payload.authorName, email);
+  const nextAvatar = String(payload.avatarUrl || '').trim() || null;
+
+  if (!existing) {
+    store.set(email, {
+      userEmail: email,
+      authorName: nextName,
+      avatarUrl: nextAvatar,
+      lastSeenAt: incomingDate && !Number.isNaN(incomingDate.getTime()) ? incomingDate.toISOString() : null
+    });
+    return;
+  }
+
+  const existingDate = existing.lastSeenAt ? new Date(existing.lastSeenAt) : null;
+  const shouldReplaceName =
+    !existing.authorName ||
+    existing.authorName === 'Người dùng' ||
+    existing.authorName.toLowerCase() === 'guest';
+  const shouldReplaceAvatar = !existing.avatarUrl && nextAvatar;
+  const shouldReplaceDate =
+    incomingDate &&
+    !Number.isNaN(incomingDate.getTime()) &&
+    (!existingDate || Number.isNaN(existingDate.getTime()) || incomingDate > existingDate);
+
+  if (shouldReplaceName) {
+    existing.authorName = nextName;
+  }
+  if (shouldReplaceAvatar) {
+    existing.avatarUrl = nextAvatar;
+  }
+  if (shouldReplaceDate) {
+    existing.lastSeenAt = incomingDate.toISOString();
+  }
+}
+
+async function getDirectoryProfiles(event) {
+  const [wishProfiles, chatProfiles, gameProfiles] = await Promise.all([
+    Wish.find({
+      eventId: event._id,
+      userEmail: { $nin: [null, ''] }
+    })
+      .sort({ createdAt: -1 })
+      .select({ userEmail: 1, authorName: 1, avatarUrl: 1, createdAt: 1 })
+      .lean(),
+    ChatMessage.find({
+      eventSlug: event.slug,
+      userEmail: { $nin: [null, ''] }
+    })
+      .sort({ createdAt: -1 })
+      .select({ userEmail: 1, authorName: 1, avatarUrl: 1, createdAt: 1 })
+      .lean(),
+    GameAttempt.find({
+      eventSlug: event.slug,
+      userEmail: { $nin: [null, ''] }
+    })
+      .sort({ createdAt: -1 })
+      .select({ userEmail: 1, authorName: 1, createdAt: 1 })
+      .lean()
+  ]);
+
+  const store = new Map();
+
+  wishProfiles.forEach((item) =>
+    mergeDirectoryProfile(store, {
+      userEmail: item.userEmail,
+      authorName: item.authorName,
+      avatarUrl: item.avatarUrl,
+      lastSeenAt: item.createdAt
+    })
+  );
+  chatProfiles.forEach((item) =>
+    mergeDirectoryProfile(store, {
+      userEmail: item.userEmail,
+      authorName: item.authorName,
+      avatarUrl: item.avatarUrl,
+      lastSeenAt: item.createdAt
+    })
+  );
+  gameProfiles.forEach((item) =>
+    mergeDirectoryProfile(store, {
+      userEmail: item.userEmail,
+      authorName: item.authorName,
+      lastSeenAt: item.createdAt
+    })
+  );
+
+  return Array.from(store.values()).sort((left, right) => {
+    const leftTime = left.lastSeenAt ? new Date(left.lastSeenAt).getTime() : 0;
+    const rightTime = right.lastSeenAt ? new Date(right.lastSeenAt).getTime() : 0;
+    if (rightTime !== leftTime) return rightTime - leftTime;
+    return left.authorName.localeCompare(right.authorName, 'vi');
+  });
+}
+
 function toPublicWish(raw = {}) {
   return {
     _id: raw._id,
@@ -74,6 +191,29 @@ function toPublicWish(raw = {}) {
     likeUserProfiles: normalizeLikeProfiles(raw.likeUserProfiles),
     likesCount: Math.max(0, Number(raw.likesCount || 0)),
     isApproved: Boolean(raw.isApproved),
+    createdAt: raw.createdAt || null,
+    updatedAt: raw.updatedAt || null
+  };
+}
+
+function toPublicGreetingCard(raw = {}) {
+  return {
+    id: String(raw._id || raw.id || '').trim(),
+    recipientName: raw.recipientName || 'Người nhận',
+    recipientEmail: raw.recipientEmail || null,
+    message: raw.message || '',
+    templateId: raw.templateId || null,
+    templateTitle: raw.templateTitle || null,
+    templateCategory: raw.templateCategory || null,
+    imageUrl: raw.imageUrl || null,
+    templateAccent: raw.templateAccent || null,
+    templateSurface: raw.templateSurface || null,
+    aiPrompt: raw.aiPrompt || '',
+    senderUid: raw.senderUid || null,
+    senderEmail: raw.senderEmail || null,
+    senderName: raw.senderName || 'Ẩn danh',
+    mailStatus: raw.mailStatus || 'queued',
+    mailError: raw.mailError || null,
     createdAt: raw.createdAt || null,
     updatedAt: raw.updatedAt || null
   };
@@ -260,6 +400,184 @@ router.post(
   }
 
   return res.status(201).json(publicWish);
+  })
+);
+
+router.get(
+  '/directory/:eventSlug/people',
+  asyncHandler(async (req, res) => {
+  const eventSlug = String(req.params.eventSlug || '').trim();
+  if (!eventSlug) {
+    return res.status(400).json({ message: 'eventSlug is required' });
+  }
+
+  const event = await findPublicEventBySlug(eventSlug);
+  if (!event) {
+    return res.status(403).json({ message: 'This event is not public right now' });
+  }
+
+  const profiles = await getDirectoryProfiles(event);
+
+  return res.json({
+    eventSlug,
+    totalCount: profiles.length,
+    people: profiles
+  });
+  })
+);
+
+router.post(
+  '/cards/ai-message',
+  asyncHandler(async (req, res) => {
+  const messagePrompt = String(req.body?.messagePrompt || '').trim();
+  const templateTitle = String(req.body?.templateTitle || '').trim();
+  const templateCategory = String(req.body?.templateCategory || '').trim();
+
+  if (!messagePrompt) {
+    return res.status(400).json({ message: 'messagePrompt is required' });
+  }
+
+  try {
+    const suggestion = await generateCardMessage({
+      messagePrompt,
+      templateTitle,
+      templateCategory
+    });
+
+    return res.json({
+      suggestion
+    });
+  } catch (error) {
+    const statusCode = Number(error?.statusCode || 502);
+    return res.status(statusCode).json({
+      message: error.message || 'AI message generation failed'
+    });
+  }
+  })
+);
+
+router.get(
+  '/cards/bootstrap',
+  asyncHandler(async (req, res) => {
+    const viewerEmail = String(req.query.viewerEmail || '')
+      .trim()
+      .toLowerCase();
+    const viewerUid = String(req.query.viewerUid || '')
+      .trim()
+      .toLowerCase();
+    const viewerKey = viewerEmail || viewerUid;
+
+    const [templates, cardDocs] = await Promise.all([
+      listGreetingCardTemplates(),
+      GreetingCard.find({})
+        .sort({ createdAt: -1 })
+        .limit(300)
+        .lean()
+    ]);
+
+    const cards = cardDocs.map((item) => toPublicGreetingCard(item));
+    const myReceivedCards = viewerEmail
+      ? cards.filter((card) => String(card.recipientEmail || '').trim().toLowerCase() === viewerEmail)
+      : [];
+    const mySentCards = viewerKey
+      ? cards.filter((card) => {
+          const senderEmail = String(card.senderEmail || '').trim().toLowerCase();
+          const senderUid = String(card.senderUid || '').trim().toLowerCase();
+          return senderEmail === viewerEmail || senderUid === viewerUid;
+        })
+      : [];
+
+    return res.json({
+      templates: templates.map((template) => ({
+        id: template.templateId,
+        title: template.title,
+        category: template.category,
+        imageUrl: template.imageUrl,
+        accent: template.accent,
+        surface: template.surface
+      })),
+      cards,
+      myReceivedCards,
+      mySentCards,
+      mailEnabled: isMailConfigured()
+    });
+  })
+);
+
+router.post(
+  '/cards/send',
+  asyncHandler(async (req, res) => {
+    const identity = extractUserIdentity(req.body);
+    if (!identity.userKey) {
+      return res.status(401).json({ message: 'Cần đăng nhập trước khi gửi thiệp.' });
+    }
+
+    const recipientName = String(req.body?.recipientName || '').trim();
+    const recipientEmail = String(req.body?.recipientEmail || '')
+      .trim()
+      .toLowerCase();
+    const message = String(req.body?.message || '').trim();
+    const templateId = String(req.body?.templateId || '').trim();
+    const aiPrompt = String(req.body?.aiPrompt || '').trim();
+
+    if (!recipientName || !recipientEmail || !message || !templateId) {
+      return res.status(400).json({
+        message: 'recipientName, recipientEmail, message, templateId là bắt buộc.'
+      });
+    }
+
+    const templates = await listGreetingCardTemplates();
+    const template = templates.find((item) => item.templateId === templateId);
+    if (!template) {
+      return res.status(404).json({ message: 'Không tìm thấy mẫu thiệp đã chọn.' });
+    }
+
+    const card = await GreetingCard.create({
+      recipientName,
+      recipientEmail,
+      message,
+      templateId: template.templateId,
+      templateTitle: template.title,
+      templateCategory: template.category,
+      imageUrl: template.imageUrl,
+      templateAccent: template.accent,
+      templateSurface: template.surface,
+      aiPrompt: aiPrompt || null,
+      senderUid: identity.userUid || null,
+      senderEmail: identity.userEmail || null,
+      senderName: identity.authorName || 'Ẩn danh',
+      mailStatus: isMailConfigured() ? 'queued' : 'skipped'
+    });
+
+    if (isMailConfigured()) {
+      try {
+        const emailPayload = buildGreetingCardEmail({
+          ...card.toObject(),
+          createdAt: card.createdAt
+        });
+        const info = await sendMail({
+          from: process.env.MAIL_FROM,
+          to: recipientEmail,
+          subject: emailPayload.subject,
+          text: emailPayload.text,
+          html: emailPayload.html
+        });
+
+        card.mailStatus = 'sent';
+        card.mailMessageId = info?.messageId || null;
+        card.mailError = null;
+        await card.save();
+      } catch (error) {
+        card.mailStatus = 'failed';
+        card.mailError = String(error?.message || 'Không gửi được email').slice(0, 500);
+        await card.save();
+      }
+    }
+
+    return res.status(201).json({
+      card: toPublicGreetingCard(card.toObject()),
+      mailEnabled: isMailConfigured()
+    });
   })
 );
 
