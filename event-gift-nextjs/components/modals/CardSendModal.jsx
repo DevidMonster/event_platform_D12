@@ -22,7 +22,7 @@ export default function CardSendModal({ open, onClose, onSent, draft }) {
     recipientEmail: '',
     manualMessage: '',
     aiMessage: '',
-    tone: 'ngot_ngao',
+    tone: 'vui_ve',
     aiPrompt: ''
   });
   const [recipientQuery, setRecipientQuery] = useState('');
@@ -39,7 +39,7 @@ export default function CardSendModal({ open, onClose, onSent, draft }) {
       recipientEmail: '',
       manualMessage: draft.message || '',
       aiMessage: '',
-      tone: draft.tone || 'ngot_ngao',
+      tone: draft.tone || 'vui_ve',
       aiPrompt: ''
     });
     setRecipientQuery('');
@@ -57,11 +57,10 @@ export default function CardSendModal({ open, onClose, onSent, draft }) {
 
     if (!normalizedQuery) return recipientOptions;
 
-    return recipientOptions
-      .filter((person) => {
-        const haystack = [person.authorName, person.userEmail].join(' ').toLowerCase();
-        return haystack.includes(normalizedQuery);
-      });
+    return recipientOptions.filter((person) => {
+      const haystack = [person.authorName, person.userEmail].join(' ').toLowerCase();
+      return haystack.includes(normalizedQuery);
+    });
   }, [recipientOptions, recipientQuery]);
 
   if (!open || !draft?.template) return null;
@@ -109,7 +108,7 @@ export default function CardSendModal({ open, onClose, onSent, draft }) {
       });
 
       updateField('aiMessage', suggestion.message || '');
-      updateField('tone', suggestion.tone || 'ngot_ngao');
+      updateField('tone', suggestion.tone || 'vui_ve');
       updateField('aiPrompt', aiPrompt);
       setMessageMode('ai');
       setStatusMessage('AI đã viết xong nội dung. Bạn có thể sửa lại trước khi gửi.');
@@ -195,7 +194,7 @@ export default function CardSendModal({ open, onClose, onSent, draft }) {
                   <textarea
                     value={form.manualMessage}
                     onChange={(event) => updateField('manualMessage', event.target.value)}
-                    placeholder="Nhập lời chúc của bạn..."
+                    placeholder="Nhập lời chúc Boy's Day của bạn..."
                     maxLength={420}
                     required={messageMode === 'manual'}
                   />
@@ -208,7 +207,7 @@ export default function CardSendModal({ open, onClose, onSent, draft }) {
                   <textarea
                     value={aiPrompt}
                     onChange={(event) => setAiPrompt(event.target.value)}
-                    placeholder="Ví dụ: lời chúc tri ân dành cho đồng nghiệp, lịch sự, ấm áp, dài hơn bình thường"
+                    placeholder="Ví dụ: lời chúc vui vẻ, tự tin, hài hước cho Boy's Day 6/4, dành cho đồng nghiệp nam hoặc bạn thân"
                     maxLength={260}
                   />
                 </label>
@@ -287,7 +286,7 @@ export default function CardSendModal({ open, onClose, onSent, draft }) {
               <input
                 value={form.recipientName}
                 onChange={(event) => updateField('recipientName', event.target.value)}
-                placeholder="Ví dụ: Chị Thu Hà"
+                placeholder="Ví dụ: Anh Minh"
                 required
               />
             </label>

@@ -12,7 +12,7 @@ function SideSent() {
     <section className="side-card">
       <p className="side-kicker">Đã gửi</p>
       <h3>{mySentCards.length} thiệp do bạn tạo</h3>
-      <p>Theo dõi nhanh trạng thái của các thiệp bạn đã gửi.</p>
+      <p>Theo dõi nhanh trạng thái các thiệp Boy&apos;s Day bạn đã gửi.</p>
     </section>
   );
 }
@@ -21,7 +21,11 @@ export default function SentPage() {
   const { mySentCards } = useGreetingApp();
 
   return (
-    <AppShell title="DGC - D12 Greeting Cards" subtitle="Gửi thiệp đến những người bạn" sidePanel={<SideSent />}>
+    <AppShell
+      title="D12 - Boy's Day 6/4"
+      subtitle="Theo dõi những tấm thiệp bạn đã gửi trong ngày 6/4"
+      sidePanel={<SideSent />}
+    >
       <AuthGate>
         <section className="section-block">
           <div className="section-head">
@@ -36,7 +40,7 @@ export default function SentPage() {
             ) : (
               <article className="empty-card">
                 <h3>Chưa có thiệp nào</h3>
-                <p>Chọn một mẫu ở màn Gửi thiệp để bắt đầu.</p>
+                <p>Chọn một mẫu ở màn Gửi thiệp để bắt đầu gửi lời chúc Boy&apos;s Day.</p>
               </article>
             )}
           </div>

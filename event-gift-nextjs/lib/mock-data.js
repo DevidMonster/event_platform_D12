@@ -1,38 +1,38 @@
 export const seedCards = [
   {
     id: 'card-001',
-    recipientName: 'Thu Hà',
-    recipientEmail: 'thuha@example.com',
-    message: 'Chúc bạn có thật nhiều niềm vui và luôn tỏa sáng theo cách riêng của mình.',
+    recipientName: 'Anh Minh',
+    recipientEmail: 'anhminh@example.com',
+    message: 'Chúc cậu luôn giữ được năng lượng tích cực, bản lĩnh và thật nhiều niềm vui trong ngày Boy&apos;s Day năm nay.',
     templateId: 'rose-blush',
     senderUid: 'demo-sender-a',
     senderEmail: 'sender-a@example.com',
     senderName: 'Ẩn danh',
     mailStatus: 'sent',
-    createdAt: '2026-03-28T08:10:00.000Z'
+    createdAt: '2026-04-06T08:10:00.000Z'
   },
   {
     id: 'card-002',
-    recipientName: 'Lan Anh',
-    recipientEmail: 'lananh@example.com',
-    message: 'Một ngày thật dịu dàng, thật nhiều hoa và những điều đáng yêu.',
+    recipientName: 'Tuấn Anh',
+    recipientEmail: 'tuananh@example.com',
+    message: 'Chúc cậu có một ngày 6/4 thật vui, thật tự tin và gặp nhiều điều may mắn đúng như những gì cậu xứng đáng.',
     templateId: 'lavender-breeze',
     senderUid: 'demo-sender-b',
     senderEmail: 'sender-b@example.com',
     senderName: 'Ẩn danh',
     mailStatus: 'sent',
-    createdAt: '2026-03-28T09:25:00.000Z'
+    createdAt: '2026-04-06T09:25:00.000Z'
   },
   {
     id: 'card-003',
     recipientName: 'Bạn',
     recipientEmail: 'you@example.com',
-    message: 'Gửi bạn một lời cảm ơn thật lớn và một ngày ngập tràn niềm vui.',
+    message: 'Gửi đến bạn một lời chúc thật gọn mà chân thành: luôn mạnh mẽ, luôn vui vẻ và luôn là chính mình.',
     templateId: 'petal-ribbon',
     senderUid: 'demo-sender-c',
     senderEmail: 'sender-c@example.com',
     senderName: 'Ẩn danh',
     mailStatus: 'sent',
-    createdAt: '2026-03-28T10:45:00.000Z'
+    createdAt: '2026-04-06T10:45:00.000Z'
   }
 ];

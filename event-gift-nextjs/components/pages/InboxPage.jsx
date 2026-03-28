@@ -12,7 +12,7 @@ function SideSummary() {
     <section className="side-card">
       <p className="side-kicker">Tổng quan</p>
       <h3>{myReceivedCards.length} thiệp gửi đến bạn</h3>
-      <p>{inboxCards.length} thiệp đang hiển thị trên bảng tin.</p>
+      <p>{inboxCards.length} thiệp đang hiển thị trên bảng tin Boy&apos;s Day.</p>
     </section>
   );
 }
@@ -21,7 +21,11 @@ export default function InboxPage() {
   const { myReceivedCards, inboxCards } = useGreetingApp();
 
   return (
-    <AppShell title="DGC - D12 Greeting Cards" subtitle="Gửi thiệp đến những người bạn" sidePanel={<SideSummary />}>
+    <AppShell
+      title="D12 - Boy's Day 6/4"
+      subtitle="Nhận và xem lại những lời chúc gửi trong ngày Boy's Day"
+      sidePanel={<SideSummary />}
+    >
       <AuthGate>
         <section className="section-block">
           <div className="section-head">
@@ -36,7 +40,7 @@ export default function InboxPage() {
             ) : (
               <article className="empty-card">
                 <h3>Chưa có thiệp mới</h3>
-                <p>Khi có ai đó gửi thiệp cho bạn, mục này sẽ hiện ngay.</p>
+                <p>Khi có ai đó gửi thiệp Boy&apos;s Day cho bạn, mục này sẽ hiển thị ngay.</p>
               </article>
             )}
           </div>

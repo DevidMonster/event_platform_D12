@@ -649,34 +649,31 @@ router.post(
   })
 );
 
-router.get(
-  '/chat/:eventSlug/messages',
-  asyncHandler(async (req, res) => {
-  const eventSlug = String(req.params.eventSlug || '').trim();
+async function respondSharedChatMessages(req, res) {
   const limit = Math.min(Math.max(parseInt(req.query.limit, 10) || 40, 1), 100);
 
-  if (!eventSlug) {
-    return res.status(400).json({ message: 'eventSlug is required' });
-  }
-
-  const event = await findPublicEventBySlug(eventSlug);
-  if (!event) {
-    return res.status(403).json({ message: 'This event is not public right now' });
-  }
-
   const [messages, totalCount] = await Promise.all([
-    ChatMessage.find({ eventSlug })
+    ChatMessage.find({})
       .sort({ createdAt: -1 })
       .limit(limit)
       .lean(),
-    ChatMessage.countDocuments({ eventSlug })
+    ChatMessage.countDocuments({})
   ]);
 
   return res.json({
     messages: messages.reverse(),
     totalCount: Math.max(0, Number(totalCount || 0))
   });
-  })
+}
+
+router.get(
+  '/chat/messages',
+  asyncHandler(async (req, res) => respondSharedChatMessages(req, res))
+);
+
+router.get(
+  '/chat/:eventSlug/messages',
+  asyncHandler(async (req, res) => respondSharedChatMessages(req, res))
 );
 
 router.post(

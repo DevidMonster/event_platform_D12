@@ -1,68 +1,47 @@
-const Event = require('../models/Event');
 const ChatMessage = require('../models/ChatMessage');
+
+const SHARED_CHAT_SCOPE = 'shared-chat';
 
 function normalizeText(value = '') {
   return String(value || '').trim();
 }
 
-async function isPublicEvent(eventSlug) {
-  const slug = normalizeText(eventSlug);
-  if (!slug) return false;
-
-  const event = await Event.findOne({ slug, status: 'published', isActive: true }).lean();
-  return Boolean(event);
+function resolveChatScope() {
+  return SHARED_CHAT_SCOPE;
 }
 
 function setupChatSocket(io) {
   io.on('connection', (socket) => {
-    socket.on('join_event_stream', async (payload = {}) => {
-      const eventSlug = normalizeText(payload.eventSlug);
-      if (!eventSlug) {
-        socket.emit('chat_error', { message: 'eventSlug is required.' });
-        return;
-      }
-
-      const canJoin = await isPublicEvent(eventSlug);
-      if (!canJoin) {
-        socket.emit('chat_error', { message: 'This event is not public right now.' });
-        return;
-      }
-
+    socket.on('join_event_stream', (payload = {}) => {
+      const eventSlug = normalizeText(payload.eventSlug) || SHARED_CHAT_SCOPE;
       socket.join(`event:${eventSlug}`);
       socket.emit('event_stream_joined', { eventSlug });
     });
 
-    socket.on('join_room', async (payload = {}) => {
-      const eventSlug = normalizeText(payload.eventSlug);
+    socket.on('join_room', (payload = {}) => {
       const userUid = normalizeText(payload.userUid);
       const userEmail = normalizeText(payload.userEmail).toLowerCase();
 
-      if (!eventSlug || (!userUid && !userEmail)) {
+      if (!userUid && !userEmail) {
         socket.emit('chat_error', { message: 'Bạn cần đăng nhập để vào chat.' });
         return;
       }
 
-      const canJoin = await isPublicEvent(eventSlug);
-      if (!canJoin) {
-        socket.emit('chat_error', { message: 'Sự kiện hiện chưa mở chat công khai.' });
-        return;
-      }
-
-      socket.join(`chat:${eventSlug}`);
+      const chatScope = resolveChatScope();
+      socket.join(`chat:${chatScope}`);
       socket.data.userKey = userUid || userEmail;
-      socket.data.eventSlug = eventSlug;
-      socket.emit('room_joined', { eventSlug });
+      socket.data.eventSlug = chatScope;
+      socket.emit('room_joined', { eventSlug: chatScope });
     });
 
     socket.on('send_message', async (payload = {}) => {
-      const eventSlug = normalizeText(payload.eventSlug);
       const userUid = normalizeText(payload.userUid);
       const userEmail = normalizeText(payload.userEmail).toLowerCase();
       const authorName = normalizeText(payload.authorName) || 'Khách';
       const avatarUrl = normalizeText(payload.avatarUrl) || null;
       const message = normalizeText(payload.message);
 
-      if (!eventSlug || (!userUid && !userEmail)) {
+      if (!userUid && !userEmail) {
         socket.emit('chat_error', { message: 'Bạn cần đăng nhập để gửi tin nhắn.' });
         return;
       }
@@ -72,14 +51,9 @@ function setupChatSocket(io) {
         return;
       }
 
-      const canChat = await isPublicEvent(eventSlug);
-      if (!canChat) {
-        socket.emit('chat_error', { message: 'Sự kiện hiện chưa mở chat công khai.' });
-        return;
-      }
-
+      const chatScope = resolveChatScope();
       const saved = await ChatMessage.create({
-        eventSlug,
+        eventSlug: chatScope,
         userUid: userUid || userEmail,
         userEmail: userEmail || null,
         authorName,
@@ -87,8 +61,7 @@ function setupChatSocket(io) {
         message
       });
 
-      const room = `chat:${eventSlug}`;
-      io.to(room).emit('new_message', {
+      io.to(`chat:${chatScope}`).emit('new_message', {
         _id: saved._id,
         eventSlug: saved.eventSlug,
         userUid: saved.userUid,

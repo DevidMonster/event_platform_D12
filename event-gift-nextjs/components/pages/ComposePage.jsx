@@ -11,11 +11,11 @@ import { useGreetingApp } from '../../context/GreetingAppContext';
 function SideCompose() {
   return (
     <section className="side-card accent">
-      <p className="side-kicker">Gửi thiệp</p>
+      <p className="side-kicker">Boy&apos;s Day 6/4</p>
       <h3>1. Chọn mẫu thiệp</h3>
-      <p>Chọn một mẫu phù hợp với người nhận và cảm xúc bạn muốn gửi gắm.</p>
+      <p>Chọn một mẫu phù hợp với người nhận và tinh thần bạn muốn gửi trong ngày 6/4.</p>
       <h3>2. Viết tay hoặc nhờ AI</h3>
-      <p>Sau khi chọn thiệp, bạn có thể tự nhập nội dung hoặc mô tả để AI viết lời chúc giúp bạn.</p>
+      <p>Sau khi chọn thiệp, bạn có thể tự nhập nội dung hoặc mô tả để AI viết lời chúc phù hợp cho Boy&apos;s Day.</p>
     </section>
   );
 }
@@ -29,7 +29,7 @@ export default function ComposePage() {
     setDraft({
       template,
       message: '',
-      tone: 'ngot_ngao',
+      tone: 'vui_ve',
       aiPrompt: ''
     });
   }
@@ -43,21 +43,26 @@ export default function ComposePage() {
         : mailEnabled
           ? ' Email đang chờ xử lý hoặc gặp lỗi cấu hình.'
           : ' Backend chưa cấu hình SMTP nên chưa gửi email thật.';
+
     message.success({
-      content: `Đã gửi thiệp thành công đến ${recipientName}.${mailMessage}`,
+      content: `Đã gửi thiệp Boy's Day thành công đến ${recipientName}.${mailMessage}`,
       duration: 4
     });
     router.push('/');
   }
 
   return (
-    <AppShell title="DGC - D12 Greeting Cards" subtitle="Gửi thiệp đến những người bạn" sidePanel={<SideCompose />}>
+    <AppShell
+      title="D12 - Boy's Day 6/4"
+      subtitle="Gửi thiệp chúc mừng đến những chàng trai bạn quý mến"
+      sidePanel={<SideCompose />}
+    >
       <AuthGate>
         <section className="section-block">
           <div className="section-head">
             <div>
               <p className="section-kicker">Chọn mẫu trước</p>
-              <h2>Kho thiệp có sẵn</h2>
+              <h2>Kho thiệp Boy&apos;s Day</h2>
             </div>
           </div>
 
