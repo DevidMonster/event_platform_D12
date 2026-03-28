@@ -55,14 +55,13 @@ export default function CardSendModal({ open, onClose, onSent, draft }) {
       .trim()
       .toLowerCase();
 
-    if (!normalizedQuery) return recipientOptions.slice(0, 8);
+    if (!normalizedQuery) return recipientOptions;
 
     return recipientOptions
       .filter((person) => {
         const haystack = [person.authorName, person.userEmail].join(' ').toLowerCase();
         return haystack.includes(normalizedQuery);
-      })
-      .slice(0, 8);
+      });
   }, [recipientOptions, recipientQuery]);
 
   if (!open || !draft?.template) return null;
