@@ -10,7 +10,6 @@ import { AI_CARD_FORM_SPEC, AI_CARD_IMAGE_SPEC, buildAiSuggestionPackage, normal
 const GreetingAppContext = createContext(null);
 
 const API_URL = String(process.env.NEXT_PUBLIC_API_URL || '').trim().replace(/\/$/, '');
-const EVENT_SLUG = String(process.env.NEXT_PUBLIC_EVENT_SLUG || '').trim();
 
 function buildRecipientFallback(email) {
   const prefix = String(email || '').split('@')[0].trim();
@@ -54,9 +53,9 @@ export function GreetingAppProvider({ children }) {
     let isMounted = true;
 
     async function loadDirectory() {
-      if (!API_URL || !EVENT_SLUG) {
+      if (!API_URL) {
         if (isMounted) {
-          setDirectoryMessage('Thiếu cấu hình API hoặc event slug.');
+          setDirectoryMessage('Thiếu cấu hình API.');
         }
         return;
       }
@@ -65,7 +64,7 @@ export function GreetingAppProvider({ children }) {
       setDirectoryMessage('');
 
       try {
-        const response = await fetch(`${API_URL}/api/public/directory/${EVENT_SLUG}/people`, {
+        const response = await fetch(`${API_URL}/api/public/directory/people`, {
           cache: 'no-store'
         });
         const payload = await response.json();

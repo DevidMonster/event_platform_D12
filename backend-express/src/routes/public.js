@@ -179,6 +179,62 @@ async function getDirectoryProfiles(event) {
   });
 }
 
+async function getGlobalDirectoryProfiles() {
+  const [wishProfiles, chatProfiles, gameProfiles] = await Promise.all([
+    Wish.find({
+      userEmail: { $nin: [null, ''] }
+    })
+      .sort({ createdAt: -1 })
+      .select({ userEmail: 1, authorName: 1, avatarUrl: 1, createdAt: 1 })
+      .lean(),
+    ChatMessage.find({
+      userEmail: { $nin: [null, ''] }
+    })
+      .sort({ createdAt: -1 })
+      .select({ userEmail: 1, authorName: 1, avatarUrl: 1, createdAt: 1 })
+      .lean(),
+    GameAttempt.find({
+      userEmail: { $nin: [null, ''] }
+    })
+      .sort({ createdAt: -1 })
+      .select({ userEmail: 1, authorName: 1, createdAt: 1 })
+      .lean()
+  ]);
+
+  const store = new Map();
+
+  wishProfiles.forEach((item) =>
+    mergeDirectoryProfile(store, {
+      userEmail: item.userEmail,
+      authorName: item.authorName,
+      avatarUrl: item.avatarUrl,
+      lastSeenAt: item.createdAt
+    })
+  );
+  chatProfiles.forEach((item) =>
+    mergeDirectoryProfile(store, {
+      userEmail: item.userEmail,
+      authorName: item.authorName,
+      avatarUrl: item.avatarUrl,
+      lastSeenAt: item.createdAt
+    })
+  );
+  gameProfiles.forEach((item) =>
+    mergeDirectoryProfile(store, {
+      userEmail: item.userEmail,
+      authorName: item.authorName,
+      lastSeenAt: item.createdAt
+    })
+  );
+
+  return Array.from(store.values()).sort((left, right) => {
+    const leftTime = left.lastSeenAt ? new Date(left.lastSeenAt).getTime() : 0;
+    const rightTime = right.lastSeenAt ? new Date(right.lastSeenAt).getTime() : 0;
+    if (rightTime !== leftTime) return rightTime - leftTime;
+    return left.authorName.localeCompare(right.authorName, 'vi');
+  });
+}
+
 function toPublicWish(raw = {}) {
   return {
     _id: raw._id,
@@ -423,6 +479,18 @@ router.get(
     totalCount: profiles.length,
     people: profiles
   });
+  })
+);
+
+router.get(
+  '/directory/people',
+  asyncHandler(async (req, res) => {
+    const profiles = await getGlobalDirectoryProfiles();
+
+    return res.json({
+      totalCount: profiles.length,
+      people: profiles
+    });
   })
 );
 
