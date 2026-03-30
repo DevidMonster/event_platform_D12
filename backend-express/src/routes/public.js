@@ -314,6 +314,10 @@ async function deliverGreetingCardMail(cardDoc) {
         }
       }
     );
+    console.error(
+      `Failed to deliver greeting card mail (cardId=${String(cardDoc._id)}, to=${cardDoc.recipientEmail}):`,
+      error?.message || error
+    );
   }
 }
 
