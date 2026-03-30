@@ -2,13 +2,22 @@ const nodemailer = require('nodemailer');
 
 let cachedTransporter = null;
 
+function normalizeSmtpConfig() {
+  const host = String(process.env.SMTP_HOST || '').trim();
+  const port = Number(process.env.SMTP_PORT);
+  const secure = String(process.env.SMTP_SECURE || '').trim().toLowerCase() === 'true';
+  const user = String(process.env.SMTP_USER || '').trim();
+  const rawPass = String(process.env.SMTP_PASS || '').trim();
+  const pass = host.includes('gmail.com') ? rawPass.replace(/\s+/g, '') : rawPass;
+  const from = String(process.env.MAIL_FROM || '').trim();
+
+  return { host, port, secure, user, pass, from };
+}
+
 function isMailConfigured() {
+  const config = normalizeSmtpConfig();
   return Boolean(
-    process.env.SMTP_HOST &&
-      process.env.SMTP_PORT &&
-      process.env.SMTP_USER &&
-      process.env.SMTP_PASS &&
-      process.env.MAIL_FROM
+    config.host && Number.isFinite(config.port) && config.user && config.pass && config.from
   );
 }
 
@@ -18,13 +27,14 @@ function getTransporter() {
   }
 
   if (!cachedTransporter) {
+    const config = normalizeSmtpConfig();
     cachedTransporter = nodemailer.createTransport({
-      host: process.env.SMTP_HOST,
-      port: Number(process.env.SMTP_PORT),
-      secure: String(process.env.SMTP_SECURE || '').trim() === 'true',
+      host: config.host,
+      port: config.port,
+      secure: config.secure,
       auth: {
-        user: process.env.SMTP_USER,
-        pass: process.env.SMTP_PASS
+        user: config.user,
+        pass: config.pass
       }
     });
   }
