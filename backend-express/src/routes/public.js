@@ -10,7 +10,7 @@ const { seedMiniGames } = require('../seed');
 const { generateCardMessage } = require('../services/ai-card-writer');
 const { listGreetingCardTemplates } = require('../services/greeting-card-templates');
 const { buildGreetingCardEmail } = require('../services/greeting-card-mail');
-const { isMailConfigured, sendMail } = require('../services/mailer');
+const { isMailConfigured, sendMail, getMailDebugInfo } = require('../services/mailer');
 
 const router = express.Router();
 const MAX_WISH_CONTENT_LENGTH = 10000;
@@ -277,7 +277,11 @@ function toPublicGreetingCard(raw = {}) {
 
 async function deliverGreetingCardMail(cardDoc) {
   if (!cardDoc || !isMailConfigured()) {
-    return;
+    return {
+      attempted: false,
+      status: 'skipped',
+      error: !cardDoc ? 'Thiếu thông tin thiệp.' : 'SMTP chưa được cấu hình đầy đủ.'
+    };
   }
 
   try {
@@ -304,13 +308,20 @@ async function deliverGreetingCardMail(cardDoc) {
         }
       }
     );
+    return {
+      attempted: true,
+      status: 'sent',
+      messageId: info?.messageId || null,
+      error: null
+    };
   } catch (error) {
+    const message = String(error?.message || 'Không gửi được email').slice(0, 500);
     await GreetingCard.updateOne(
       { _id: cardDoc._id },
       {
         $set: {
           mailStatus: 'failed',
-          mailError: String(error?.message || 'Không gửi được email').slice(0, 500)
+          mailError: message
         }
       }
     );
@@ -318,6 +329,11 @@ async function deliverGreetingCardMail(cardDoc) {
       `Failed to deliver greeting card mail (cardId=${String(cardDoc._id)}, to=${cardDoc.recipientEmail}):`,
       error?.message || error
     );
+    return {
+      attempted: true,
+      status: 'failed',
+      error: message
+    };
   }
 }
 
@@ -663,11 +679,15 @@ router.post(
       mailStatus: isMailConfigured() ? 'queued' : 'skipped'
     });
 
-    void deliverGreetingCardMail(card);
+    const mailDelivery = await deliverGreetingCardMail(card);
 
     return res.status(201).json({
       card: toPublicGreetingCard(card.toObject()),
-      mailEnabled: isMailConfigured()
+      mailEnabled: isMailConfigured(),
+      mailDebug: {
+        config: getMailDebugInfo(),
+        delivery: mailDelivery
+      }
     });
   })
 );
