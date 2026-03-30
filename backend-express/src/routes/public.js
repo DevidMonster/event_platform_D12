@@ -275,6 +275,48 @@ function toPublicGreetingCard(raw = {}) {
   };
 }
 
+async function deliverGreetingCardMail(cardDoc) {
+  if (!cardDoc || !isMailConfigured()) {
+    return;
+  }
+
+  try {
+    const emailPayload = buildGreetingCardEmail({
+      ...cardDoc.toObject(),
+      createdAt: cardDoc.createdAt
+    });
+
+    const info = await sendMail({
+      from: process.env.MAIL_FROM,
+      to: cardDoc.recipientEmail,
+      subject: emailPayload.subject,
+      text: emailPayload.text,
+      html: emailPayload.html
+    });
+
+    await GreetingCard.updateOne(
+      { _id: cardDoc._id },
+      {
+        $set: {
+          mailStatus: 'sent',
+          mailMessageId: info?.messageId || null,
+          mailError: null
+        }
+      }
+    );
+  } catch (error) {
+    await GreetingCard.updateOne(
+      { _id: cardDoc._id },
+      {
+        $set: {
+          mailStatus: 'failed',
+          mailError: String(error?.message || 'Không gửi được email').slice(0, 500)
+        }
+      }
+    );
+  }
+}
+
 function toEffectiveWeight(item) {
   const quantity = Math.max(0, Number(item.quantity || 0));
   const weight = Math.max(0.01, Number(item.weight || 1));
@@ -617,34 +659,11 @@ router.post(
       mailStatus: isMailConfigured() ? 'queued' : 'skipped'
     });
 
-    // if (isMailConfigured()) {
-      // try {
-       //  const emailPayload = buildGreetingCardEmail({
-        //   ...card.toObject(),
-       //    createdAt: card.createdAt
-      //   });
-     //    const info = await sendMail({
-       //    from: process.env.MAIL_FROM,
-       //    to: recipientEmail,
-     //      subject: emailPayload.subject,
-      //     text: emailPayload.text,
-        //   html: emailPayload.html
-      //   });
+    void deliverGreetingCardMail(card);
 
-      //   card.mailStatus = 'sent';
-      //   card.mailMessageId = info?.messageId || null;
-     //    card.mailError = null;
-    //     await card.save();
-   //    } catch (error) {
-     //    card.mailStatus = 'failed';
-    //     card.mailError = String(error?.message || 'Không gửi được email').slice(0, 500);
-     //    await card.save();
-    //   }
- //    }
-await card.save();
     return res.status(201).json({
       card: toPublicGreetingCard(card.toObject()),
-    //   mailEnabled: isMailConfigured()
+      mailEnabled: isMailConfigured()
     });
   })
 );
