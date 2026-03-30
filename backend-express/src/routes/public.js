@@ -617,34 +617,34 @@ router.post(
       mailStatus: isMailConfigured() ? 'queued' : 'skipped'
     });
 
-    if (isMailConfigured()) {
-      try {
-        const emailPayload = buildGreetingCardEmail({
-          ...card.toObject(),
-          createdAt: card.createdAt
-        });
-        const info = await sendMail({
-          from: process.env.MAIL_FROM,
-          to: recipientEmail,
-          subject: emailPayload.subject,
-          text: emailPayload.text,
-          html: emailPayload.html
-        });
+    // if (isMailConfigured()) {
+      // try {
+       //  const emailPayload = buildGreetingCardEmail({
+        //   ...card.toObject(),
+       //    createdAt: card.createdAt
+      //   });
+     //    const info = await sendMail({
+       //    from: process.env.MAIL_FROM,
+       //    to: recipientEmail,
+     //      subject: emailPayload.subject,
+      //     text: emailPayload.text,
+        //   html: emailPayload.html
+      //   });
 
-        card.mailStatus = 'sent';
-        card.mailMessageId = info?.messageId || null;
-        card.mailError = null;
-        await card.save();
-      } catch (error) {
-        card.mailStatus = 'failed';
-        card.mailError = String(error?.message || 'Không gửi được email').slice(0, 500);
-        await card.save();
-      }
-    }
-
+      //   card.mailStatus = 'sent';
+      //   card.mailMessageId = info?.messageId || null;
+     //    card.mailError = null;
+    //     await card.save();
+   //    } catch (error) {
+     //    card.mailStatus = 'failed';
+    //     card.mailError = String(error?.message || 'Không gửi được email').slice(0, 500);
+     //    await card.save();
+    //   }
+ //    }
+await card.save();
     return res.status(201).json({
       card: toPublicGreetingCard(card.toObject()),
-      mailEnabled: isMailConfigured()
+    //   mailEnabled: isMailConfigured()
     });
   })
 );
