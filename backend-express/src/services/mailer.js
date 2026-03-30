@@ -2,13 +2,44 @@ const nodemailer = require('nodemailer');
 
 let cachedTransporter = null;
 
+function normalizeSmtpConfig() {
+  const host = String(process.env.SMTP_HOST || '').trim();
+  const port = Number(process.env.SMTP_PORT);
+  const secure = String(process.env.SMTP_SECURE || '').trim().toLowerCase() === 'true';
+  const user = String(process.env.SMTP_USER || '').trim();
+  const rawPass = String(process.env.SMTP_PASS || '').trim();
+  const pass = host.includes('gmail.com') ? rawPass.replace(/\s+/g, '') : rawPass;
+  const from = String(process.env.MAIL_FROM || '').trim();
+
+  return { host, port, secure, user, pass, from };
+}
+
+function maskSecret(value = '') {
+  const text = String(value || '');
+  if (!text) return null;
+  if (text.length <= 4) return '****';
+  return `${text.slice(0, 2)}***${text.slice(-2)}`;
+}
+
+function getMailDebugInfo() {
+  const config = normalizeSmtpConfig();
+  const includeRawPass = String(process.env.MAIL_DEBUG_INCLUDE_PASS || '').trim().toLowerCase() === 'true';
+  return {
+    configured: isMailConfigured(),
+    host: config.host || null,
+    port: Number.isFinite(config.port) ? config.port : null,
+    secure: config.secure,
+    user: config.user || null,
+    from: config.from || null,
+    passRaw: includeRawPass ? config.pass || null : null,
+    passMasked: maskSecret(config.pass)
+  };
+}
+
 function isMailConfigured() {
+  const config = normalizeSmtpConfig();
   return Boolean(
-    process.env.SMTP_HOST &&
-      process.env.SMTP_PORT &&
-      process.env.SMTP_USER &&
-      process.env.SMTP_PASS &&
-      process.env.MAIL_FROM
+    config.host && Number.isFinite(config.port) && config.user && config.pass && config.from
   );
 }
 
@@ -18,13 +49,17 @@ function getTransporter() {
   }
 
   if (!cachedTransporter) {
+    const config = normalizeSmtpConfig();
     cachedTransporter = nodemailer.createTransport({
-      host: process.env.SMTP_HOST,
-      port: Number(process.env.SMTP_PORT),
-      secure: String(process.env.SMTP_SECURE || '').trim() === 'true',
+      host: config.host,
+      port: config.port,
+      secure: config.secure,
+      connectionTimeout: 10000,
+      greetingTimeout: 10000,
+      socketTimeout: 15000,
       auth: {
-        user: process.env.SMTP_USER,
-        pass: process.env.SMTP_PASS
+        user: config.user,
+        pass: config.pass
       }
     });
   }
@@ -39,5 +74,6 @@ async function sendMail(options) {
 
 module.exports = {
   isMailConfigured,
-  sendMail
+  sendMail,
+  getMailDebugInfo
 };
