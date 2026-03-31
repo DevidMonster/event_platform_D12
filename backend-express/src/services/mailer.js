@@ -2,6 +2,13 @@ const nodemailer = require('nodemailer');
 
 let cachedTransporter = null;
 
+function normalizeMailboxText(value) {
+  return String(value || '')
+    .trim()
+    .replace(/^"(.*)"$/s, '$1')
+    .trim();
+}
+
 function normalizeSmtpConfig() {
   const host = String(process.env.SMTP_HOST || '').trim();
   const port = Number(process.env.SMTP_PORT);
@@ -9,14 +16,14 @@ function normalizeSmtpConfig() {
   const user = String(process.env.SMTP_USER || '').trim();
   const rawPass = String(process.env.SMTP_PASS || '').trim();
   const pass = host.includes('gmail.com') ? rawPass.replace(/\s+/g, '') : rawPass;
-  const from = String(process.env.MAIL_FROM || '').trim();
+  const from = normalizeMailboxText(process.env.MAIL_FROM);
 
   return { host, port, secure, user, pass, from };
 }
 
 function normalizeBrevoConfig() {
   const apiKey = String(process.env.BREVO_API_KEY || '').trim();
-  const from = String(process.env.MAIL_FROM || '').trim();
+  const from = normalizeMailboxText(process.env.MAIL_FROM);
   const endpoint = String(process.env.BREVO_API_URL || 'https://api.brevo.com/v3/smtp/email').trim();
 
   return { apiKey, from, endpoint };
@@ -168,12 +175,12 @@ function normalizeRecipients(input) {
 }
 
 function parseOptionalMailbox(value) {
-  const text = String(value || '').trim();
+  const text = normalizeMailboxText(value);
   return text ? parseMailbox(text) : undefined;
 }
 
 function parseMailbox(value) {
-  const text = String(value || '').trim();
+  const text = normalizeMailboxText(value);
   const match = text.match(/^(.*)<([^>]+)>$/);
   if (!match) {
     return {
