@@ -37,7 +37,7 @@ export default function SentPage() {
               <h2>Tất cả thiệp đã gửi</h2>
             </div>
           </div>
-          <div className="cards-grid">
+          <div className="cards-grid cards-grid-mobile-2">
             {mySentCards.length ? (
               mySentCards.map((card) => (
                 <GreetingCardPreview key={card.id} card={card} hideSender={false} onClick={() => setSelectedCard(card)} />

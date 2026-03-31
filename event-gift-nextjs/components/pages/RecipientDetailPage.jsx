@@ -50,7 +50,7 @@ export default function RecipientDetailPage({ recipientKey }) {
           </div>
 
           {group ? (
-            <div className="cards-grid">
+            <div className="cards-grid cards-grid-mobile-2">
               {group.cards.map((card) => (
                 <GreetingCardPreview key={card.id} card={card} hideSender onClick={() => setSelectedCard(card)} />
               ))}
