@@ -1,11 +1,15 @@
 'use client';
 
-import { useMemo, useRef } from 'react';
+import Link from 'next/link';
+import { useMemo, useRef, useState } from 'react';
+import { Tooltip } from 'antd';
 import AppShell from '../layout/AppShell';
 import AuthGate from '../layout/AuthGate';
 import GreetingCardPreview from '../cards/GreetingCardPreview';
+import CardDetailModal from '../modals/CardDetailModal';
 import { useGreetingApp } from '../../context/GreetingAppContext';
 import defaultLogo from '../../images/default-logo.jpg';
+import { buildRecipientGroups, buildRecipientHref } from '../../lib/recipient-groups';
 
 function SideSummary() {
   const { myReceivedCards, inboxCards } = useGreetingApp();
@@ -19,52 +23,7 @@ function SideSummary() {
   );
 }
 
-function buildRecipientGroups(cards, recipientOptions, user) {
-  const profileMap = new Map();
-
-  recipientOptions.forEach((person) => {
-    const key = String(person.userEmail || '').trim().toLowerCase();
-    if (!key) return;
-    profileMap.set(key, person);
-  });
-
-  const grouped = new Map();
-
-  cards.forEach((card) => {
-    const email = String(card.recipientEmail || '').trim().toLowerCase();
-    const name = String(card.recipientName || '').trim() || 'Người nhận';
-    const key = email || `${name.toLowerCase()}-${card.id}`;
-    const profile =
-      (email && profileMap.get(email)) ||
-      (email && email === String(user?.email || '').trim().toLowerCase()
-        ? {
-            authorName: user?.displayName || name,
-            userEmail: email,
-            avatarUrl: user?.photoURL || null
-          }
-        : null);
-
-    if (!grouped.has(key)) {
-      grouped.set(key, {
-        key,
-        recipientName: profile?.authorName || name,
-        recipientEmail: email || null,
-        avatarUrl: profile?.avatarUrl || null,
-        cards: []
-      });
-    }
-
-    grouped.get(key).cards.push(card);
-  });
-
-  return Array.from(grouped.values()).sort((left, right) => {
-    const leftDate = new Date(left.cards[0]?.createdAt || 0).getTime();
-    const rightDate = new Date(right.cards[0]?.createdAt || 0).getTime();
-    return rightDate - leftDate;
-  });
-}
-
-function RecipientRow({ group }) {
+function RecipientRow({ group, onOpenCard }) {
   const trackRef = useRef(null);
   const cardCount = group.cards.length;
 
@@ -80,24 +39,29 @@ function RecipientRow({ group }) {
   return (
     <article className="recipient-row">
       <div className="recipient-row-head">
-        <div className="recipient-row-meta">
-          <div className="recipient-row-avatar">
-            <img
-              src={group.avatarUrl || defaultLogo.src}
-              alt={group.recipientName}
-              onError={(event) => {
-                event.currentTarget.src = defaultLogo.src;
-              }}
-            />
-          </div>
-          <div className="recipient-row-copy">
-            <h3>{group.recipientName}</h3>
-            <p>{group.recipientEmail || `${cardCount} thiệp dành cho người nhận này`}</p>
-          </div>
-        </div>
+        <Tooltip title="Ấn vào để xem danh sách" mouseEnterDelay={0} placement="top">
+          <Link href={buildRecipientHref(group)} className="recipient-row-meta recipient-row-link">
+            <div className="recipient-row-avatar">
+              <img
+                src={group.avatarUrl || defaultLogo.src}
+                alt={group.recipientName}
+                onError={(event) => {
+                  event.currentTarget.src = defaultLogo.src;
+                }}
+              />
+            </div>
+            <div className="recipient-row-copy">
+              <h3>{group.recipientName}</h3>
+              <p>{group.recipientEmail || `${cardCount} thiệp dành cho người nhận này`}</p>
+            </div>
+          </Link>
+        </Tooltip>
 
         <div className="recipient-row-actions">
           <span>{cardCount} thiệp</span>
+          <Link href={buildRecipientHref(group)} className="recipient-view-link">
+            Xem riêng
+          </Link>
           <button
             type="button"
             className="recipient-scroll-btn"
@@ -120,7 +84,7 @@ function RecipientRow({ group }) {
       <div ref={trackRef} className="recipient-scroll-track">
         {group.cards.map((card) => (
           <div key={card.id} className="recipient-scroll-card">
-            <GreetingCardPreview card={card} hideSender compact />
+            <GreetingCardPreview card={card} hideSender compact onClick={() => onOpenCard(card)} />
           </div>
         ))}
       </div>
@@ -130,6 +94,7 @@ function RecipientRow({ group }) {
 
 export default function InboxPage() {
   const { inboxCards, recipientOptions, user } = useGreetingApp();
+  const [selectedCard, setSelectedCard] = useState(null);
 
   const recipientGroups = useMemo(
     () => buildRecipientGroups(inboxCards, recipientOptions, user),
@@ -147,13 +112,16 @@ export default function InboxPage() {
           <div className="section-head">
             <div>
               <p className="section-kicker">Bảng tin theo người nhận</p>
-              <h2>Mỗi người nhận, một hàng thiệp riêng</h2>
+              <h2>Danh sách thiệp gửi</h2>
+              <p>(ấn vào từng người nhận để xem danh sách thiệp của họ, hoặc từng thiệp để xem chi tiết)</p>
             </div>
           </div>
 
           <div className="recipient-rows">
             {recipientGroups.length ? (
-              recipientGroups.map((group) => <RecipientRow key={group.key} group={group} />)
+              recipientGroups.map((group) => (
+                <RecipientRow key={group.key} group={group} onOpenCard={setSelectedCard} />
+              ))
             ) : (
               <article className="empty-card">
                 <h3>Chưa có thiệp mới</h3>
@@ -162,6 +130,13 @@ export default function InboxPage() {
             )}
           </div>
         </section>
+
+        <CardDetailModal
+          open={Boolean(selectedCard)}
+          card={selectedCard}
+          hideSender
+          onClose={() => setSelectedCard(null)}
+        />
       </AuthGate>
     </AppShell>
   );

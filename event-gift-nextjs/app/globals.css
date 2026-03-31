@@ -628,6 +628,11 @@ textarea {
   gap: 12px;
 }
 
+.recipient-row-link {
+  flex: 1 1 auto;
+  cursor: pointer;
+}
+
 .recipient-row-avatar {
   width: 52px;
   height: 52px;
@@ -677,6 +682,20 @@ textarea {
   font-weight: 700;
 }
 
+.recipient-view-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 38px;
+  padding: 0 12px;
+  border-radius: 999px;
+  border: 1px solid rgba(115, 43, 73, 0.1);
+  background: rgba(255, 255, 255, 0.86);
+  color: #763f54;
+  font-size: 0.84rem;
+  font-weight: 700;
+}
+
 .recipient-scroll-btn {
   width: 38px;
   height: 38px;
@@ -714,12 +733,12 @@ textarea {
 }
 
 .recipient-scroll-card {
-  flex: 0 0 clamp(320px, calc((100% - 16px) / 2), 460px);
+  flex: 0 0 clamp(180px, calc((100% - 64px) / 5), 230px);
   min-width: 0;
 }
 
 .recipient-scroll-card .gift-card.compact .gift-card-art {
-  min-height: 390px;
+  min-height: 290px;
 }
 
 .gift-card {
@@ -738,6 +757,10 @@ textarea {
   box-shadow: 0 20px 36px rgba(39, 17, 28, 0.18);
   overflow: hidden;
   position: relative;
+}
+
+.gift-card-art.clickable {
+  cursor: pointer;
 }
 
 .gift-card-art::before {
@@ -811,7 +834,39 @@ textarea {
 }
 
 .gift-card.compact .gift-card-art {
-  min-height: 420px;
+  min-height: 290px;
+}
+
+.gift-card.compact .gift-card-copy {
+  padding: 0 16px;
+  min-height: 88%;
+  gap: 8px;
+}
+
+.gift-card.compact .gift-card-recipient {
+  font-size: 0.82rem;
+  line-height: 1.18;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.gift-card.compact .gift-card-message {
+  font-size: 0.72rem;
+  line-height: 1.35;
+  max-height: none;
+  overflow: hidden;
+  padding-right: 0;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+}
+
+.gift-card.compact .gift-card-footer {
+  padding: 10px 16px 14px;
+  font-size: 0.68rem;
+  gap: 6px;
 }
 
 .gift-card-action {
@@ -1157,6 +1212,45 @@ textarea {
   justify-items: start;
 }
 
+.detail-modal {
+  width: min(960px, 100%);
+}
+
+.detail-modal-body {
+  display: grid;
+  grid-template-columns: minmax(0, 1.05fr) minmax(280px, 0.75fr);
+  gap: 18px;
+}
+
+.detail-modal-preview,
+.detail-modal-info {
+  min-width: 0;
+}
+
+.detail-modal-info {
+  display: grid;
+  gap: 14px;
+  align-content: start;
+}
+
+.detail-modal-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.detail-modal-meta {
+  margin: 6px 0 0;
+  color: #8a6a77;
+}
+
+.detail-modal-message {
+  margin: 0;
+  line-height: 1.75;
+  color: #4a2534;
+  white-space: pre-wrap;
+}
+
 .btn,
 .icon-btn {
   border: 0;
@@ -1332,16 +1426,21 @@ textarea {
   }
 
   .recipient-scroll-card {
-    flex-basis: min(88vw, 420px);
+    flex-basis: clamp(200px, calc((100% - 32px) / 3), 240px);
   }
 
   .recipient-list {
+    grid-template-columns: 1fr;
+  }
+
+  .detail-modal-body,
+  .detail-modal-grid {
     grid-template-columns: 1fr;
   }
 }
 
 @media (max-width: 720px) {
   .recipient-scroll-card {
-    flex-basis: min(90vw, 360px);
+    flex-basis: min(62vw, 220px);
   }
 }

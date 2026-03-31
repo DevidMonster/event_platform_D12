@@ -1,9 +1,16 @@
 'use client';
 
+import { Tooltip } from 'antd';
 import { cardTemplates } from '../../lib/card-templates';
 import { AI_CARD_IMAGE_SPEC } from '../../lib/ai-card-script';
 
-export default function GreetingCardPreview({ card, compact = false, hideSender = true, overlayAction = null }) {
+export default function GreetingCardPreview({
+  card,
+  compact = false,
+  hideSender = true,
+  overlayAction = null,
+  onClick = null
+}) {
   const baseTemplate = cardTemplates.find((item) => item.id === card.templateId) || cardTemplates[0];
   const template = {
     ...baseTemplate,
@@ -12,10 +19,25 @@ export default function GreetingCardPreview({ card, compact = false, hideSender 
     surface: card.templateSurface || baseTemplate.surface
   };
 
-  return (
-    <article className={compact ? 'gift-card compact' : 'gift-card'}>
+  const cardBody = (
+    <article
+      className={compact ? 'gift-card compact' : 'gift-card'}
+      onClick={onClick || undefined}
+      role={onClick ? 'button' : undefined}
+      tabIndex={onClick ? 0 : undefined}
+      onKeyDown={
+        onClick
+          ? (event) => {
+              if (event.key === 'Enter' || event.key === ' ') {
+                event.preventDefault();
+                onClick();
+              }
+            }
+          : undefined
+      }
+    >
       <div
-        className="gift-card-art"
+        className={onClick ? 'gift-card-art clickable' : 'gift-card-art'}
         style={{
           '--gift-accent': template.accent,
           '--gift-surface': template.surface,
@@ -34,5 +56,15 @@ export default function GreetingCardPreview({ card, compact = false, hideSender 
       </div>
       {overlayAction ? <div className="gift-card-action">{overlayAction}</div> : null}
     </article>
+  );
+
+  if (!onClick) {
+    return cardBody;
+  }
+
+  return (
+    <Tooltip title="Ấn vào để xem chi tiết" mouseEnterDelay={0} placement="top">
+      {cardBody}
+    </Tooltip>
   );
 }

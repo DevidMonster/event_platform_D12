@@ -1,8 +1,10 @@
 'use client';
 
+import { useState } from 'react';
 import AppShell from '../layout/AppShell';
 import AuthGate from '../layout/AuthGate';
 import GreetingCardPreview from '../cards/GreetingCardPreview';
+import CardDetailModal from '../modals/CardDetailModal';
 import { useGreetingApp } from '../../context/GreetingAppContext';
 
 function SideSent() {
@@ -19,10 +21,11 @@ function SideSent() {
 
 export default function SentPage() {
   const { mySentCards } = useGreetingApp();
+  const [selectedCard, setSelectedCard] = useState(null);
 
   return (
     <AppShell
-      title="D12 - Boy's Day 6/4"
+      title="D12 - Boy&apos;s Day 6/4"
       subtitle="Theo dõi những tấm thiệp bạn đã gửi trong ngày 6/4"
       sidePanel={<SideSent />}
     >
@@ -36,7 +39,9 @@ export default function SentPage() {
           </div>
           <div className="cards-grid">
             {mySentCards.length ? (
-              mySentCards.map((card) => <GreetingCardPreview key={card.id} card={card} hideSender={false} />)
+              mySentCards.map((card) => (
+                <GreetingCardPreview key={card.id} card={card} hideSender={false} onClick={() => setSelectedCard(card)} />
+              ))
             ) : (
               <article className="empty-card">
                 <h3>Chưa có thiệp nào</h3>
@@ -45,6 +50,13 @@ export default function SentPage() {
             )}
           </div>
         </section>
+
+        <CardDetailModal
+          open={Boolean(selectedCard)}
+          card={selectedCard}
+          hideSender={false}
+          onClose={() => setSelectedCard(null)}
+        />
       </AuthGate>
     </AppShell>
   );
