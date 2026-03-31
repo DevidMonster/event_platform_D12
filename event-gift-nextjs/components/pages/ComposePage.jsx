@@ -6,9 +6,16 @@ import { message } from 'antd';
 import AppShell from '../layout/AppShell';
 import AuthGate from '../layout/AuthGate';
 import CardSendModal from '../modals/CardSendModal';
+import { SideCardSkeleton, TemplateGridSkeleton } from '../layout/DataSkeletons';
 import { useGreetingApp } from '../../context/GreetingAppContext';
 
 function SideCompose() {
+  const { cardsLoading } = useGreetingApp();
+
+  if (cardsLoading) {
+    return <SideCardSkeleton />;
+  }
+
   return (
     <section className="side-card accent">
       <p className="side-kicker">Boy&apos;s Day 6/4</p>
@@ -22,7 +29,7 @@ function SideCompose() {
 
 export default function ComposePage() {
   const router = useRouter();
-  const { templates, cardsLoading, cardsMessage, mailEnabled } = useGreetingApp();
+  const { templates, cardsLoading, cardsMessage } = useGreetingApp();
   const [draft, setDraft] = useState(null);
 
   function openTemplateFlow(template) {
@@ -37,10 +44,9 @@ export default function ComposePage() {
   function handleSent(card) {
     setDraft(null);
     const recipientName = card.recipientName || 'người nhận';
-    const mailMessage = ''     
 
     message.success({
-      content: `Đã gửi thiệp Boy's Day thành công đến ${recipientName}.${mailMessage}`,
+      content: `Đã gửi thiệp Boy's Day thành công đến ${recipientName}.`,
       duration: 4
     });
     router.push('/');
@@ -61,25 +67,29 @@ export default function ComposePage() {
             </div>
           </div>
 
-          {cardsMessage ? <p className="composer-ai-status">{cardsMessage}</p> : null}
+          {cardsMessage && !cardsLoading ? <p className="composer-ai-status">{cardsMessage}</p> : null}
 
-          <section className="template-rail">
-            {templates.map((template) => (
-              <article key={template.id} className="template-card">
-                <div
-                  className="template-cover"
-                  style={{ backgroundImage: `url(${template.imageUrl})`, borderColor: template.accent }}
-                />
-                <div className="template-copy">
-                  <p>{template.category}</p>
-                  <h3>{template.title}</h3>
-                  <button className="btn" onClick={() => openTemplateFlow(template)}>
-                    Chọn mẫu này
-                  </button>
-                </div>
-              </article>
-            ))}
-          </section>
+          {cardsLoading ? (
+            <TemplateGridSkeleton />
+          ) : (
+            <section className="template-rail">
+              {templates.map((template) => (
+                <article key={template.id} className="template-card">
+                  <div
+                    className="template-cover"
+                    style={{ backgroundImage: `url(${template.imageUrl})`, borderColor: template.accent }}
+                  />
+                  <div className="template-copy">
+                    <p>{template.category}</p>
+                    <h3>{template.title}</h3>
+                    <button className="btn" onClick={() => openTemplateFlow(template)}>
+                      Chọn mẫu này
+                    </button>
+                  </div>
+                </article>
+              ))}
+            </section>
+          )}
 
           {!templates.length && !cardsLoading ? (
             <article className="empty-card">

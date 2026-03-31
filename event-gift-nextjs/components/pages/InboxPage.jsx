@@ -5,6 +5,7 @@ import { useMemo, useRef, useState } from 'react';
 import { Tooltip } from 'antd';
 import AppShell from '../layout/AppShell';
 import AuthGate from '../layout/AuthGate';
+import { RecipientRowsSkeleton, SideCardSkeleton } from '../layout/DataSkeletons';
 import GreetingCardPreview from '../cards/GreetingCardPreview';
 import CardDetailModal from '../modals/CardDetailModal';
 import { useGreetingApp } from '../../context/GreetingAppContext';
@@ -12,7 +13,11 @@ import defaultLogo from '../../images/default-logo.jpg';
 import { buildRecipientGroups, buildRecipientHref } from '../../lib/recipient-groups';
 
 function SideSummary() {
-  const { myReceivedCards, inboxCards } = useGreetingApp();
+  const { myReceivedCards, inboxCards, cardsLoading, directoryLoading } = useGreetingApp();
+
+  if (cardsLoading || directoryLoading) {
+    return <SideCardSkeleton />;
+  }
 
   return (
     <section className="side-card">
@@ -93,13 +98,17 @@ function RecipientRow({ group, onOpenCard }) {
 }
 
 export default function InboxPage() {
-  const { inboxCards, recipientOptions, user } = useGreetingApp();
+  const { inboxCards, recipientOptions, user, cardsLoading, directoryLoading, cardsMessage, directoryMessage } =
+    useGreetingApp();
   const [selectedCard, setSelectedCard] = useState(null);
 
   const recipientGroups = useMemo(
     () => buildRecipientGroups(inboxCards, recipientOptions, user),
     [inboxCards, recipientOptions, user]
   );
+
+  const isInitialLoading = cardsLoading || directoryLoading;
+  const pageMessage = cardsMessage || directoryMessage;
 
   return (
     <AppShell
@@ -113,22 +122,28 @@ export default function InboxPage() {
             <div>
               <p className="section-kicker">Bảng tin theo người nhận</p>
               <h2>Danh sách thiệp gửi</h2>
-              <p>(ấn vào từng người nhận để xem danh sách thiệp của họ, hoặc từng thiệp để xem chi tiết)</p>
+              <p>Ấn vào từng người nhận để xem danh sách thiệp của họ, hoặc từng thiệp để xem chi tiết.</p>
             </div>
           </div>
 
-          <div className="recipient-rows">
-            {recipientGroups.length ? (
-              recipientGroups.map((group) => (
-                <RecipientRow key={group.key} group={group} onOpenCard={setSelectedCard} />
-              ))
-            ) : (
-              <article className="empty-card">
-                <h3>Chưa có thiệp mới</h3>
-                <p>Khi có ai đó gửi thiệp Boy&apos;s Day, danh sách theo người nhận sẽ xuất hiện tại đây.</p>
-              </article>
-            )}
-          </div>
+          {pageMessage && !isInitialLoading ? <p className="composer-ai-status">{pageMessage}</p> : null}
+
+          {isInitialLoading ? (
+            <RecipientRowsSkeleton />
+          ) : (
+            <div className="recipient-rows">
+              {recipientGroups.length ? (
+                recipientGroups.map((group) => (
+                  <RecipientRow key={group.key} group={group} onOpenCard={setSelectedCard} />
+                ))
+              ) : (
+                <article className="empty-card">
+                  <h3>Chưa có thiệp mới</h3>
+                  <p>Khi có ai đó gửi thiệp Boy&apos;s Day, danh sách theo người nhận sẽ xuất hiện tại đây.</p>
+                </article>
+              )}
+            </div>
+          )}
         </section>
 
         <CardDetailModal

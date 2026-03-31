@@ -1295,6 +1295,45 @@ textarea {
   padding: 24px;
 }
 
+.recipient-row-skeleton .recipient-row-copy {
+  flex: 1;
+}
+
+.recipient-scroll-track-skeleton {
+  overflow: hidden;
+}
+
+.gift-card-art-skeleton {
+  display: flex;
+  align-items: stretch;
+  justify-content: stretch;
+  overflow: hidden;
+}
+
+.gift-card-image-skeleton,
+.gift-card-image-skeleton .ant-skeleton-image {
+  width: 100%;
+  height: 100%;
+}
+
+.template-cover-skeleton {
+  overflow: hidden;
+}
+
+.template-cover-skeleton .ant-skeleton-image,
+.template-cover-skeleton .ant-skeleton-image svg,
+.gift-card-art-skeleton .ant-skeleton-image,
+.gift-card-art-skeleton .ant-skeleton-image svg {
+  width: 100%;
+  height: 100%;
+}
+
+.recipient-row-skeleton .ant-skeleton,
+.template-card .ant-skeleton,
+.side-card .ant-skeleton {
+  width: 100%;
+}
+
 @media (max-width: 1080px) {
   .content-grid,
   .hero-card {

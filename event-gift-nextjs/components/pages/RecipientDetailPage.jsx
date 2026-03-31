@@ -6,10 +6,15 @@ import AppShell from '../layout/AppShell';
 import AuthGate from '../layout/AuthGate';
 import GreetingCardPreview from '../cards/GreetingCardPreview';
 import CardDetailModal from '../modals/CardDetailModal';
+import { CardsGridSkeleton, SideCardSkeleton } from '../layout/DataSkeletons';
 import { useGreetingApp } from '../../context/GreetingAppContext';
 import { buildRecipientGroups } from '../../lib/recipient-groups';
 
-function SideRecipient({ group }) {
+function SideRecipient({ group, loading }) {
+  if (loading) {
+    return <SideCardSkeleton />;
+  }
+
   return (
     <section className="side-card">
       <p className="side-kicker">Người nhận</p>
@@ -20,7 +25,8 @@ function SideRecipient({ group }) {
 }
 
 export default function RecipientDetailPage({ recipientKey }) {
-  const { inboxCards, recipientOptions, user } = useGreetingApp();
+  const { inboxCards, recipientOptions, user, cardsLoading, directoryLoading, cardsMessage, directoryMessage } =
+    useGreetingApp();
   const [selectedCard, setSelectedCard] = useState(null);
 
   const recipientGroups = useMemo(
@@ -30,12 +36,14 @@ export default function RecipientDetailPage({ recipientKey }) {
 
   const decodedKey = decodeURIComponent(String(recipientKey || '').trim());
   const group = recipientGroups.find((item) => item.key === decodedKey);
+  const isInitialLoading = cardsLoading || directoryLoading;
+  const pageMessage = cardsMessage || directoryMessage;
 
   return (
     <AppShell
       title={group ? group.recipientName : 'Người nhận'}
       subtitle="Xem toàn bộ các thiệp đã nhận của người này"
-      sidePanel={<SideRecipient group={group} />}
+      sidePanel={<SideRecipient group={group} loading={isInitialLoading} />}
     >
       <AuthGate>
         <section className="section-block">
@@ -49,7 +57,11 @@ export default function RecipientDetailPage({ recipientKey }) {
             </Link>
           </div>
 
-          {group ? (
+          {pageMessage && !isInitialLoading ? <p className="composer-ai-status">{pageMessage}</p> : null}
+
+          {isInitialLoading ? (
+            <CardsGridSkeleton />
+          ) : group ? (
             <div className="cards-grid cards-grid-mobile-2">
               {group.cards.map((card) => (
                 <GreetingCardPreview key={card.id} card={card} hideSender onClick={() => setSelectedCard(card)} />

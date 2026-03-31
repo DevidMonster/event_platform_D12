@@ -5,10 +5,15 @@ import AppShell from '../layout/AppShell';
 import AuthGate from '../layout/AuthGate';
 import GreetingCardPreview from '../cards/GreetingCardPreview';
 import CardDetailModal from '../modals/CardDetailModal';
+import { CardsGridSkeleton, SideCardSkeleton } from '../layout/DataSkeletons';
 import { useGreetingApp } from '../../context/GreetingAppContext';
 
 function SideSent() {
-  const { mySentCards } = useGreetingApp();
+  const { mySentCards, cardsLoading } = useGreetingApp();
+
+  if (cardsLoading) {
+    return <SideCardSkeleton />;
+  }
 
   return (
     <section className="side-card">
@@ -20,7 +25,7 @@ function SideSent() {
 }
 
 export default function SentPage() {
-  const { mySentCards } = useGreetingApp();
+  const { mySentCards, cardsLoading, cardsMessage } = useGreetingApp();
   const [selectedCard, setSelectedCard] = useState(null);
 
   return (
@@ -37,18 +42,25 @@ export default function SentPage() {
               <h2>Tất cả thiệp đã gửi</h2>
             </div>
           </div>
-          <div className="cards-grid cards-grid-mobile-2">
-            {mySentCards.length ? (
-              mySentCards.map((card) => (
-                <GreetingCardPreview key={card.id} card={card} hideSender={false} onClick={() => setSelectedCard(card)} />
-              ))
-            ) : (
-              <article className="empty-card">
-                <h3>Chưa có thiệp nào</h3>
-                <p>Chọn một mẫu ở màn Gửi thiệp để bắt đầu gửi lời chúc Boy&apos;s Day.</p>
-              </article>
-            )}
-          </div>
+
+          {cardsMessage && !cardsLoading ? <p className="composer-ai-status">{cardsMessage}</p> : null}
+
+          {cardsLoading ? (
+            <CardsGridSkeleton />
+          ) : (
+            <div className="cards-grid cards-grid-mobile-2">
+              {mySentCards.length ? (
+                mySentCards.map((card) => (
+                  <GreetingCardPreview key={card.id} card={card} hideSender={false} onClick={() => setSelectedCard(card)} />
+                ))
+              ) : (
+                <article className="empty-card">
+                  <h3>Chưa có thiệp nào</h3>
+                  <p>Chọn một mẫu ở màn Gửi thiệp để bắt đầu gửi lời chúc Boy&apos;s Day.</p>
+                </article>
+              )}
+            </div>
+          )}
         </section>
 
         <CardDetailModal

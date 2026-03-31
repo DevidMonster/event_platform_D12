@@ -65,9 +65,9 @@ export function GreetingAppProvider({ children }) {
   const [cards, setCards] = useState(seedCards);
   const [templates, setTemplates] = useState(fallbackTemplates);
   const [directoryPeople, setDirectoryPeople] = useState([]);
-  const [directoryLoading, setDirectoryLoading] = useState(false);
+  const [directoryLoading, setDirectoryLoading] = useState(Boolean(API_URL));
   const [directoryMessage, setDirectoryMessage] = useState('');
-  const [cardsLoading, setCardsLoading] = useState(false);
+  const [cardsLoading, setCardsLoading] = useState(Boolean(API_URL));
   const [cardsMessage, setCardsMessage] = useState('');
   const [mailEnabled, setMailEnabled] = useState(false);
 
