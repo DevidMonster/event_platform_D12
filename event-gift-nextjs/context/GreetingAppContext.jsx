@@ -5,7 +5,12 @@ import { onAuthStateChanged, signInWithPopup, signOut } from 'firebase/auth';
 import { auth, googleProvider, hasFirebaseConfig } from '../lib/firebase';
 import { seedCards } from '../lib/mock-data';
 import { cardTemplates as fallbackTemplates } from '../lib/card-templates';
-import { AI_CARD_FORM_SPEC, AI_CARD_IMAGE_SPEC, buildAiSuggestionPackage, normalizeAiPromptText } from '../lib/ai-card-script';
+import {
+  AI_CARD_FORM_SPEC,
+  AI_CARD_IMAGE_SPEC,
+  buildAiSuggestionPackage,
+  normalizeAiPromptText
+} from '../lib/ai-card-script';
 
 const GreetingAppContext = createContext(null);
 
@@ -20,6 +25,37 @@ function buildRecipientFallback(email) {
     .filter(Boolean)
     .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
     .join(' ');
+}
+
+async function syncMongoUserProfile(user) {
+  if (!API_URL) return null;
+
+  const userUid = String(user?.uid || '').trim();
+  const userEmail = String(user?.email || '')
+    .trim()
+    .toLowerCase();
+
+  if (!userUid && !userEmail) return null;
+
+  const response = await fetch(`${API_URL}/api/public/users/sync`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({
+      userUid: userUid || null,
+      userEmail: userEmail || null,
+      authorName: String(user?.displayName || user?.email || '').trim() || null,
+      avatarUrl: String(user?.photoURL || '').trim() || null
+    })
+  });
+
+  const payload = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    throw new Error(payload?.message || 'Không đồng bộ được người dùng.');
+  }
+
+  return payload?.user || null;
 }
 
 export function GreetingAppProvider({ children }) {
@@ -52,7 +88,7 @@ export function GreetingAppProvider({ children }) {
   useEffect(() => {
     let isMounted = true;
 
-    async function loadDirectory() {
+    async function syncAndLoadDirectory() {
       if (!API_URL) {
         if (isMounted) {
           setDirectoryMessage('Thiếu cấu hình API.');
@@ -64,10 +100,14 @@ export function GreetingAppProvider({ children }) {
       setDirectoryMessage('');
 
       try {
+        if (user?.email || user?.uid) {
+          await syncMongoUserProfile(user);
+        }
+
         const response = await fetch(`${API_URL}/api/public/directory/people`, {
           cache: 'no-store'
         });
-        const payload = await response.json();
+        const payload = await response.json().catch(() => ({}));
 
         if (!response.ok) {
           throw new Error(payload?.message || 'Không tải được danh sách người nhận.');
@@ -86,12 +126,12 @@ export function GreetingAppProvider({ children }) {
       }
     }
 
-    loadDirectory();
+    syncAndLoadDirectory();
 
     return () => {
       isMounted = false;
     };
-  }, []);
+  }, [user?.uid, user?.email, user?.displayName, user?.photoURL]);
 
   useEffect(() => {
     let isMounted = true;
@@ -110,7 +150,7 @@ export function GreetingAppProvider({ children }) {
         const response = await fetch(`${API_URL}/api/public/cards/bootstrap?${search.toString()}`, {
           cache: 'no-store'
         });
-        const payload = await response.json();
+        const payload = await response.json().catch(() => ({}));
 
         if (!response.ok) {
           throw new Error(payload?.message || 'Không tải được dữ liệu thiệp.');
@@ -247,6 +287,7 @@ export function GreetingAppProvider({ children }) {
     if (!email) return [];
     return cards.filter((card) => String(card.recipientEmail || '').trim().toLowerCase() === email);
   }, [cards, user]);
+
   const mySentCards = useMemo(() => {
     const senderEmail = String(user?.email || '').trim().toLowerCase();
     const senderUid = String(user?.uid || '').trim();

@@ -6,6 +6,7 @@ const ChatMessage = require('../models/ChatMessage');
 const GameReward = require('../models/GameReward');
 const GameAttempt = require('../models/GameAttempt');
 const GreetingCard = require('../models/GreetingCard');
+const User = require('../models/User');
 const { seedMiniGames } = require('../seed');
 const { generateCardMessage } = require('../services/ai-card-writer');
 const { listGreetingCardTemplates } = require('../services/greeting-card-templates');
@@ -33,6 +34,50 @@ function extractUserIdentity(payload = {}) {
   const authorName = String(payload.authorName || '').trim() || 'Guest';
   const userKey = String(userUid || userEmail).trim().toLowerCase();
   return { userUid, userEmail, userKey, authorName };
+}
+
+function isAllowedDirectoryEmail(email = '') {
+  const normalizedEmail = String(email || '')
+    .trim()
+    .toLowerCase();
+
+  return /@vti\.com\.vn$/i.test(normalizedEmail) || normalizedEmail === 'nguyenquangdang310803@gmail.com';
+}
+
+async function syncMongoUserProfile(payload = {}) {
+  const userUid = String(payload.userUid || '').trim() || null;
+  const userEmail = String(payload.userEmail || '')
+    .trim()
+    .toLowerCase();
+  const authorName = normalizeDirectoryName(payload.authorName, userEmail);
+  const avatarUrl = String(payload.avatarUrl || '').trim() || null;
+
+  if (!userEmail) {
+    throw new Error('userEmail is required');
+  }
+
+  const update = {
+    $set: {
+      userUid,
+      userEmail,
+      authorName,
+      avatarUrl,
+      provider: 'google',
+      isActive: true,
+      lastLoginAt: new Date()
+    },
+    $setOnInsert: {
+      createdAt: new Date()
+    }
+  };
+
+  const user = await User.findOneAndUpdate({ userEmail }, update, {
+    new: true,
+    upsert: true,
+    setDefaultsOnInsert: true
+  }).lean();
+
+  return user;
 }
 
 function normalizeLikeProfiles(list = []) {
@@ -180,59 +225,20 @@ async function getDirectoryProfiles(event) {
 }
 
 async function getGlobalDirectoryProfiles() {
-  const [wishProfiles, chatProfiles, gameProfiles] = await Promise.all([
-    Wish.find({
-      userEmail: { $nin: [null, ''] }
-    })
-      .sort({ createdAt: -1 })
-      .select({ userEmail: 1, authorName: 1, avatarUrl: 1, createdAt: 1 })
-      .lean(),
-    ChatMessage.find({
-      userEmail: { $nin: [null, ''] }
-    })
-      .sort({ createdAt: -1 })
-      .select({ userEmail: 1, authorName: 1, avatarUrl: 1, createdAt: 1 })
-      .lean(),
-    GameAttempt.find({
-      userEmail: { $nin: [null, ''] }
-    })
-      .sort({ createdAt: -1 })
-      .select({ userEmail: 1, authorName: 1, createdAt: 1 })
-      .lean()
-  ]);
+  const users = await User.find({
+    isActive: true,
+    $or: [{ userEmail: /@vti\.com\.vn$/i }, { userEmail: 'nguyenquangdang310803@gmail.com' }]
+  })
+    .sort({ lastLoginAt: -1, createdAt: -1, authorName: 1 })
+    .select({ _id: 0, userEmail: 1, authorName: 1, avatarUrl: 1, lastLoginAt: 1 })
+    .lean();
 
-  const store = new Map();
-
-  wishProfiles.forEach((item) =>
-    mergeDirectoryProfile(store, {
-      userEmail: item.userEmail,
-      authorName: item.authorName,
-      avatarUrl: item.avatarUrl,
-      lastSeenAt: item.createdAt
-    })
-  );
-  chatProfiles.forEach((item) =>
-    mergeDirectoryProfile(store, {
-      userEmail: item.userEmail,
-      authorName: item.authorName,
-      avatarUrl: item.avatarUrl,
-      lastSeenAt: item.createdAt
-    })
-  );
-  gameProfiles.forEach((item) =>
-    mergeDirectoryProfile(store, {
-      userEmail: item.userEmail,
-      authorName: item.authorName,
-      lastSeenAt: item.createdAt
-    })
-  );
-
-  return Array.from(store.values()).sort((left, right) => {
-    const leftTime = left.lastSeenAt ? new Date(left.lastSeenAt).getTime() : 0;
-    const rightTime = right.lastSeenAt ? new Date(right.lastSeenAt).getTime() : 0;
-    if (rightTime !== leftTime) return rightTime - leftTime;
-    return left.authorName.localeCompare(right.authorName, 'vi');
-  });
+  return users.map((item) => ({
+    userEmail: item.userEmail,
+    authorName: normalizeDirectoryName(item.authorName, item.userEmail),
+    avatarUrl: item.avatarUrl || null,
+    lastSeenAt: item.lastLoginAt || null
+  }));
 }
 
 function toPublicWish(raw = {}) {
@@ -552,6 +558,44 @@ router.get(
     return res.json({
       totalCount: profiles.length,
       people: profiles
+    });
+  })
+);
+
+router.post(
+  '/users/sync',
+  asyncHandler(async (req, res) => {
+    const userUid = String(req.body?.userUid || '').trim();
+    const userEmail = String(req.body?.userEmail || '')
+      .trim()
+      .toLowerCase();
+    const authorName = String(req.body?.authorName || '').trim();
+    const avatarUrl = String(req.body?.avatarUrl || '').trim();
+
+    if (!userUid && !userEmail) {
+      return res.status(400).json({ message: 'userUid or userEmail is required' });
+    }
+
+    if (!userEmail) {
+      return res.status(400).json({ message: 'userEmail is required' });
+    }
+
+    const user = await syncMongoUserProfile({
+      userUid,
+      userEmail,
+      authorName,
+      avatarUrl
+    });
+
+    return res.json({
+      user: {
+        userUid: user.userUid || null,
+        userEmail: user.userEmail,
+        authorName: user.authorName || 'Người dùng',
+        avatarUrl: user.avatarUrl || null,
+        lastLoginAt: user.lastLoginAt || null,
+        isAllowedDirectoryAccount: isAllowedDirectoryEmail(user.userEmail)
+      }
     });
   })
 );
@@ -974,4 +1018,6 @@ router.post(
 );
 
 module.exports = router;
+
+
 
