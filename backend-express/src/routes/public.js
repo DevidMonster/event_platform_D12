@@ -280,7 +280,7 @@ async function deliverGreetingCardMail(cardDoc) {
     return {
       attempted: false,
       status: 'skipped',
-      error: !cardDoc ? 'Thiếu thông tin thiệp.' : 'SMTP chưa được cấu hình đầy đủ.'
+      error: !cardDoc ? 'Thiếu thông tin thiệp.' : 'Mail provider chưa được cấu hình đầy đủ.'
     };
   }
 
@@ -974,3 +974,4 @@ router.post(
 );
 
 module.exports = router;
+

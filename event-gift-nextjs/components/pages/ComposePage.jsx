@@ -37,12 +37,7 @@ export default function ComposePage() {
   function handleSent(card) {
     setDraft(null);
     const recipientName = card.recipientName || 'người nhận';
-    const mailMessage =
-      card?.mailStatus === 'sent'
-        ? ` Email đã được gửi tới ${card.recipientEmail}.`
-        : mailEnabled
-          ? ' Email đang chờ xử lý hoặc gặp lỗi cấu hình.'
-          : ' Backend chưa cấu hình SMTP nên chưa gửi email thật.';
+    const mailMessage = ''     
 
     message.success({
       content: `Đã gửi thiệp Boy's Day thành công đến ${recipientName}.${mailMessage}`,
