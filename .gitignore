@@ -2,4 +2,7 @@
 **/.next
 **/.env
 **/.env.local
+backend-express/secrets/
+**/firebase-service-account*.json
+**/*service-account*.json
 .DS_Store
